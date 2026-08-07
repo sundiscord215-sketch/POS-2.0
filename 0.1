@@ -1,0 +1,3979 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="POS บูธ">
+<link rel="manifest" href="./manifest.json">
+<title>POS บูธ</title>
+<style>
+  /* ══════════════════════════════════════════════
+     TOKENS (คงธีมเดิม — สว่าง, accent เขียว/ส้ม/ชมพู, Sarabun)
+     ══════════════════════════════════════════════ */
+  :root {
+    --bg:         #f5f5f7;
+    --surface:    #ffffff;
+    --surface2:   #f1f1f4;
+    --border:     #e4e4e9;
+    --accent:     #16a34a;
+    --accent2:    #ea8a4c;
+    --danger:     #ef4444;
+    --text:       #1a1a1e;
+    --text-dim:   #77777f;
+    --text-faint: #b6b6c0;
+    --cta:        #e63976;
+    --cta-dark:   #c22a60;
+    --paid-green: #2ecc71;
+    --radius:     10px;
+    --radius-sm:  6px;
+    --font:       'Sarabun', sans-serif;
+    --nav-h:      56px;
+    --tab-h:      52px;
+  }
+
+  /* ── RESET ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; touch-action: manipulation; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: var(--font); cursor: pointer; border: none; outline: none; background: none; }
+  input, select, textarea { font-family: var(--font); outline: none; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ══════════════════════════════════════════════
+     LAYOUT ROOT
+     ══════════════════════════════════════════════ */
+  #app { display: flex; flex-direction: column; height: 100dvh; position: relative; }
+
+  /* page container ที่หน้าต่างๆ (บล็อคถัดไป) จะ mount เข้ามา
+     ตอนนี้มีแค่ mode-selector — หน้าอื่นจะ .page.active ทีละหน้า */
+  .page {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .page.active { display: flex; }
+
+  /* ══════════════════════════════════════════════
+     MODE SELECTOR (หน้าแรกสุดของแอป)
+     ══════════════════════════════════════════════ */
+  #page-mode-selector {
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 24px;
+    background: var(--bg);
+  }
+  #page-mode-selector .ms-logo {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  #page-mode-selector .ms-sub {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-bottom: 28px;
+    text-align: center;
+  }
+  .ms-btn {
+    width: 100%;
+    max-width: 340px;
+    padding: 22px 20px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-align: left;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .ms-btn:active { transform: scale(0.98); }
+  .ms-btn .ms-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .ms-btn.owner .ms-icon { background: rgba(22,163,74,0.12); }
+  .ms-btn.employee .ms-icon { background: rgba(230,57,118,0.12); }
+  .ms-btn .ms-label { font-size: 16px; font-weight: 700; color: var(--text); }
+  .ms-btn .ms-desc { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+
+  /* ── Toast (utility ทั่วไป) ── */
+  #toast-container {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    pointer-events: none;
+  }
+  .toast {
+    background: rgba(26,26,30,0.92);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 13.5px;
+    white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    animation: toast-in .18s ease;
+  }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Connection status dot (utility ทั่วไป, ยังไม่ผูกระบบจริง) ── */
+  #conn-status {
+    position: fixed;
+    top: 14px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+    z-index: 50;
+  }
+  #conn-status .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-faint);
+  }
+  #conn-status.online .dot { background: var(--paid-green); }
+  #conn-status.offline .dot { background: var(--danger); }
+
+  /* ══════════════════════════════════════════════
+     TOP NAV — โชว์ร้านปัจจุบัน (โผล่ทุกหน้าฝั่งร้านค้าที่มีร้าน active)
+     ══════════════════════════════════════════════ */
+  #topnav {
+    display: none;
+    height: var(--nav-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    padding: 0 16px 0 12px;
+    gap: 10px;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  #topnav.show { display: flex; }
+  #topnav .tn-badge {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  #topnav .tn-text { display: flex; flex-direction: column; line-height: 1.25; }
+  #topnav .tn-name { font-size: 14.5px; font-weight: 700; color: var(--text); }
+  #topnav .tn-code { font-size: 11.5px; color: var(--text-dim); }
+
+  /* ══════════════════════════════════════════════
+     PAGE: Store Management
+     ══════════════════════════════════════════════ */
+  #page-store-management,
+  #page-materials,
+  #page-owners,
+  #page-products { background: var(--bg); position: relative; }
+  .sm-header {
+    padding: 18px 18px 8px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+  .sm-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 16px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sm-empty {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 14px;
+    margin-top: 40px;
+    line-height: 1.7;
+  }
+  .store-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .store-card.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(22,163,74,0.12); }
+  .store-card .sc-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 21px;
+    flex-shrink: 0;
+  }
+  .store-card .sc-main { flex: 1; min-width: 0; cursor: pointer; }
+  .store-card .sc-name { font-size: 15.5px; font-weight: 700; color: var(--text); }
+  .store-card .sc-code { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .store-card .sc-active-tag {
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 700;
+    margin-top: 3px;
+  }
+  .store-card .sc-delete {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--danger);
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .sm-fab {
+    position: absolute;
+    right: 20px;
+    bottom: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--cta);
+    color: #fff;
+    font-size: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(230,57,118,0.35);
+    z-index: 5;
+  }
+  .sm-fab:active { background: var(--cta-dark); }
+
+  /* ══════════════════════════════════════════════
+     SUB-PAGES: วัตถุดิบ / เจ้าของ (เข้าจากเมนูตั้งค่า > จัดการร้าน)
+     ══════════════════════════════════════════════ */
+  .sub-header {
+    height: var(--nav-h);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .sub-back {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .sub-title { font-size: 17px; font-weight: 700; color: var(--text); }
+
+  .item-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .item-card .item-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 21px;
+    flex-shrink: 0;
+  }
+  .item-card .item-main { flex: 1; min-width: 0; cursor: pointer; }
+  .item-card .item-name { font-size: 15.5px; font-weight: 700; color: var(--text); }
+  .item-card .item-sub { font-size: 13px; color: var(--accent); font-weight: 700; margin-top: 2px; }
+  .item-card .item-sub2 { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .item-card .item-delete {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--danger);
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .unit-cost-preview {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    background: rgba(22,163,74,0.08);
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+  }
+
+  /* ── item-card extras: owner tag / price row / stock badge (หน้าสินค้า) ── */
+  .item-card .item-owner-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    margin-top: 3px;
+  }
+  .item-card .item-price-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+    font-size: 12.5px;
+  }
+  .item-card .item-price-row .price { color: var(--text); font-weight: 700; }
+  .item-card .item-price-row .profit.positive { color: var(--accent); font-weight: 700; }
+  .item-card .item-price-row .profit.negative { color: var(--danger); font-weight: 700; }
+  .item-card .stock-badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: var(--surface2);
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+
+  /* ── checkbox row (เช่น "มีสต็อกสินค้า") ── */
+  .form-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .form-checkbox-row input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+  }
+  .form-checkbox-row label { font-size: 14.5px; color: var(--text); font-weight: 600; }
+
+  /* ── chip row (เลือกเจ้าของสินค้า) ── */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 13px;
+    border-radius: 999px;
+    background: var(--surface2);
+    border: 2px solid transparent;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .chip.selected { border-color: var(--accent); background: rgba(22,163,74,0.1); }
+  .chip.add { border: 2px dashed var(--border); color: var(--text-dim); background: transparent; }
+
+  /* ── สูตรวัตถุดิบในฟอร์มสินค้า ── */
+  .recipe-section {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-bottom: 4px;
+  }
+  .recipe-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .recipe-line select {
+    flex: 1.5;
+    min-width: 0;
+    padding: 10px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    font-size: 13.5px;
+    color: var(--text);
+  }
+  .recipe-line input {
+    flex: 0.7;
+    min-width: 0;
+    padding: 10px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    font-size: 13.5px;
+    color: var(--text);
+  }
+  .recipe-line .recipe-subtotal {
+    flex: 0.85;
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .recipe-line .recipe-remove {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--surface2);
+    color: var(--danger);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .recipe-actions { display: flex; gap: 8px; margin-top: 4px; }
+  .recipe-action-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .profit-preview {
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+  }
+  .profit-preview.positive { color: var(--accent); background: rgba(22,163,74,0.08); }
+  .profit-preview.negative { color: var(--danger); background: rgba(239,68,68,0.08); }
+
+  /* ── Modal generic ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 100;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-panel {
+    background: var(--surface);
+    width: 100%;
+    max-width: 480px;
+    max-height: 88vh;
+    overflow-y: auto;
+    border-radius: 18px 18px 0 0;
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+  }
+  .modal-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 13px; color: var(--text-dim); margin-bottom: 6px; display: block; }
+  .form-input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    color: var(--text);
+    background: var(--surface2);
+  }
+  .form-input:focus { border-color: var(--accent); }
+  .form-input[readonly] { color: var(--text-dim); letter-spacing: 1.5px; font-weight: 700; }
+
+  .swatch-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .swatch {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2.5px solid transparent;
+  }
+  .swatch.selected { border-color: var(--text); }
+
+  .icon-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .icon-choice {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: var(--surface2);
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid transparent;
+  }
+  .icon-choice.selected { border-color: var(--accent); background: rgba(22,163,74,0.1); }
+
+  .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
+  .btn {
+    flex: 1;
+    padding: 13px;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .btn-secondary { background: var(--surface2); color: var(--text); }
+  .btn-primary { background: var(--cta); color: #fff; }
+  .btn-primary:active { background: var(--cta-dark); }
+
+  /* ══════════════════════════════════════════════
+     SETTINGS FAB + SLIDING PANEL
+     ══════════════════════════════════════════════ */
+  #settings-fab {
+    display: none;
+    position: fixed;
+    left: 20px;
+    bottom: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    font-size: 24px;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.14);
+    z-index: 40;
+  }
+  #settings-fab.show { display: flex; }
+
+  #settings-panel {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform .22s ease;
+  }
+  #settings-panel.open { transform: translateY(0); }
+
+  .sp-header {
+    height: var(--nav-h);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .sp-header .sp-title { font-size: 17px; font-weight: 700; color: var(--text); }
+  .sp-close {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sp-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .sp-category {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .sp-category-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 14px;
+  }
+  .sp-category-row .sp-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    flex-shrink: 0;
+  }
+  .sp-category-row .sp-main { flex: 1; min-width: 0; }
+  .sp-category-row .sp-label { font-size: 15px; font-weight: 700; color: var(--text); }
+  .sp-category-row .sp-sub { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
+  .sp-category-row .sp-chevron { color: var(--text-faint); font-size: 16px; transition: transform .15s ease; }
+  .sp-category.expanded .sp-chevron { transform: rotate(90deg); }
+
+  .sp-detail {
+    display: none;
+    padding: 0 14px 16px;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sp-category.expanded .sp-detail { display: flex; }
+
+  .sp-detail-btn {
+    padding: 13px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 14.5px;
+    font-weight: 600;
+    text-align: left;
+  }
+  .sp-detail-btn.danger { background: rgba(239,68,68,0.1); color: var(--danger); }
+  .sp-detail-btn.danger-solid { background: var(--danger); color: #fff; }
+
+  /* ══════════════════════════════════════════════
+     PAGE: ขาย (POS) หลัก
+     ══════════════════════════════════════════════ */
+  #page-pos { background: var(--bg); position: relative; }
+
+  .pos-grid {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 14px 110px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    align-content: start;
+  }
+  @media (min-width: 480px) {
+    .pos-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  .pos-card {
+    position: relative;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 10px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    text-align: center;
+    transition: transform .1s ease;
+  }
+  .pos-card:active { transform: scale(0.96); }
+  .pos-card.disabled { opacity: 0.4; pointer-events: none; }
+  .pos-card .pos-card-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+  .pos-card .pos-card-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .pos-card .pos-card-price { font-size: 13px; color: var(--accent); font-weight: 700; }
+  .pos-card .pos-card-stock { font-size: 10.5px; color: var(--text-dim); }
+  .pos-card .pos-card-qty-badge {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    min-width: 23px;
+    height: 23px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--cta);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(230,57,118,0.4);
+  }
+
+  /* ── แถบตะกร้าลอย (มุมล่าง) ── */
+  .cart-bar {
+    display: none;
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 18px;
+    background: var(--cta);
+    color: #fff;
+    border-radius: 999px;
+    padding: 14px 18px;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 6px 18px rgba(230,57,118,0.4);
+    z-index: 6;
+  }
+  .cart-bar.show { display: flex; }
+  .cart-bar:active { background: var(--cta-dark); }
+  .cart-bar .cart-bar-count {
+    background: rgba(255,255,255,0.25);
+    min-width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .cart-bar .cart-bar-label { flex: 1; text-align: left; font-size: 14.5px; font-weight: 700; }
+  .cart-bar .cart-bar-total { font-size: 15.5px; font-weight: 700; }
+
+  /* ── รายการในตะกร้า (ใน modal-cart) ── */
+  .cart-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .cart-line:last-child { border-bottom: none; }
+  .cart-line .cl-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .cart-line .cl-main { flex: 1; min-width: 0; }
+  .cart-line .cl-name { font-size: 14px; font-weight: 700; color: var(--text); }
+  .cart-line .cl-unit-price { font-size: 11.5px; color: var(--text-dim); margin-top: 1px; }
+  .cart-line .cl-stepper { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .cart-line .cl-stepper button {
+    width: 27px;
+    height: 27px;
+    border-radius: 50%;
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cart-line .cl-stepper .cl-qty { min-width: 18px; text-align: center; font-weight: 700; font-size: 13.5px; }
+  .cart-line .cl-subtotal { font-size: 13px; font-weight: 700; color: var(--text); min-width: 54px; text-align: right; flex-shrink: 0; }
+  .cart-line .cl-remove {
+    width: 27px;
+    height: 27px;
+    border-radius: 50%;
+    color: var(--danger);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .cart-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0 6px;
+    font-size: 15.5px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .cart-total-row .ct-amount { color: var(--cta); font-size: 20px; }
+
+  .cart-clear-link {
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    text-decoration: underline;
+    margin-top: 10px;
+    padding: 4px;
+  }
+
+  .btn:disabled { opacity: 0.4; pointer-events: none; }
+
+  /* ══════════════════════════════════════════════
+     เลือกวิธีจ่าย (modal)
+     ══════════════════════════════════════════════ */
+  .pay-method-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 16px;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    text-align: left;
+  }
+  .pay-method-btn:active { transform: scale(0.98); }
+  .pay-method-btn .pm-icon { font-size: 26px; }
+  .pay-method-btn .pm-label { font-size: 15px; font-weight: 700; color: var(--text); }
+  .pay-method-btn .pm-sub { font-size: 12px; color: var(--text-dim); margin-top: 1px; }
+
+  /* ══════════════════════════════════════════════
+     หน้าจ่ายเงิน (คิดเงินทอน / QR) — โครงสร้างร่วม
+     ══════════════════════════════════════════════ */
+  .pay-page { background: var(--bg); }
+  .pay-back-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px 6px;
+  }
+  .pay-back-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: var(--text);
+  }
+  .pay-total-box {
+    text-align: center;
+    padding: 18px 16px 10px;
+  }
+  .pay-total-box .ptb-label { font-size: 13px; color: var(--text-dim); }
+  .pay-total-box .ptb-amount { font-size: 38px; font-weight: 800; color: var(--cta); margin-top: 2px; }
+
+  .cash-input-wrap { padding: 6px 20px; }
+  .cash-input-wrap input {
+    width: 100%;
+    font-size: 26px;
+    font-weight: 700;
+    text-align: center;
+    padding: 14px;
+    border-radius: var(--radius);
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+  }
+  .cash-quick-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 12px 20px;
+  }
+  .cash-quick-btn {
+    padding: 12px 4px;
+    background: var(--surface2);
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .cash-quick-btn:active { transform: scale(0.95); }
+  .cash-change-box {
+    margin: 14px 20px;
+    padding: 16px;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    text-align: center;
+  }
+  .cash-change-box .ccb-label { font-size: 13px; color: var(--text-dim); }
+  .cash-change-box .ccb-amount { font-size: 26px; font-weight: 800; color: var(--paid-green); margin-top: 2px; }
+  .cash-change-box.insufficient .ccb-amount { color: var(--danger); }
+  .pay-confirm-row { padding: 10px 20px 20px; margin-top: auto; }
+
+  .qr-box {
+    margin: 10px auto 6px;
+    background: #fff;
+    border-radius: 14px;
+    padding: 14px;
+    width: min(78vw, 260px);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  }
+  .qr-box svg { display: block; width: 100%; height: auto; }
+  .qr-hint { text-align: center; font-size: 12.5px; color: var(--text-dim); padding: 0 24px; margin-top: 4px; }
+  .qr-not-setup { text-align: center; padding: 40px 24px; color: var(--text-dim); font-size: 14px; }
+
+  /* ══════════════════════════════════════════════
+     หน้า PAID
+     ══════════════════════════════════════════════ */
+  .paid-page { background: var(--bg); flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; gap: 4px; }
+  .paid-icon {
+    width: 84px; height: 84px; border-radius: 50%;
+    background: var(--paid-green);
+    color: #fff; font-size: 44px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 14px;
+  }
+  .paid-title { font-size: 19px; font-weight: 800; color: var(--text); }
+  .paid-amount { font-size: 30px; font-weight: 800; color: var(--text); margin-top: 4px; }
+  .paid-sub { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+  .paid-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px; margin-top: 26px; }
+
+  /* ══════════════════════════════════════════════
+     ใบเสร็จ / ประวัติการขาย / สรุปยอด
+     ══════════════════════════════════════════════ */
+  .receipt-page, .history-page, .summary-page { background: var(--bg); }
+  .sub-page-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sub-page-header .sph-title { font-size: 16px; font-weight: 800; color: var(--text); flex: 1; }
+  .sub-page-body { flex: 1; overflow-y: auto; padding: 16px; }
+
+  .receipt-meta { text-align: center; margin-bottom: 16px; }
+  .receipt-meta .rm-id { font-size: 11.5px; color: var(--text-faint); }
+  .receipt-meta .rm-date { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+  .receipt-meta .rm-status {
+    display: inline-block; margin-top: 8px; padding: 3px 10px;
+    border-radius: 999px; font-size: 11.5px; font-weight: 700;
+  }
+  .receipt-meta .rm-status.paid { background: rgba(34,197,94,0.15); color: var(--paid-green); }
+  .receipt-meta .rm-status.refunded { background: rgba(239,68,68,0.12); color: var(--danger); }
+  .receipt-meta .rm-status.partial { background: rgba(234,179,8,0.15); color: #b45309; }
+
+  .receipt-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px dashed var(--border);
+    font-size: 13.5px;
+  }
+  .receipt-line .rl-name { color: var(--text); font-weight: 600; }
+  .receipt-line .rl-sub { color: var(--text-dim); font-size: 11.5px; }
+  .receipt-line .rl-amount { font-weight: 700; color: var(--text); }
+  .receipt-line.refunded .rl-name, .receipt-line.refunded .rl-amount { text-decoration: line-through; color: var(--text-faint); }
+
+  .receipt-total-row { display: flex; justify-content: space-between; padding: 14px 0 4px; font-size: 15px; font-weight: 800; color: var(--text); }
+  .receipt-total-row .rt-amount { color: var(--cta); font-size: 19px; }
+
+  .history-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 10px;
+  }
+  .history-item:active { transform: scale(0.98); }
+  .history-item .hi-main { flex: 1; min-width: 0; }
+  .history-item .hi-time { font-size: 12px; color: var(--text-dim); }
+  .history-item .hi-summary { font-size: 13.5px; font-weight: 700; color: var(--text); margin-top: 2px; }
+  .history-item .hi-amount { font-size: 15px; font-weight: 800; color: var(--cta); flex-shrink: 0; }
+  .history-item .hi-badge { font-size: 10.5px; padding: 2px 7px; border-radius: 999px; font-weight: 700; flex-shrink: 0; }
+  .history-item .hi-badge.refunded { background: rgba(239,68,68,0.12); color: var(--danger); }
+  .history-item .hi-badge.partial { background: rgba(234,179,8,0.15); color: #b45309; }
+
+  .summary-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 12px; text-align: center;
+  }
+  .summary-card .sc-label { font-size: 12.5px; color: var(--text-dim); }
+  .summary-card .sc-value { font-size: 26px; font-weight: 800; color: var(--text); margin-top: 4px; }
+  .summary-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .summary-owner-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13.5px;
+  }
+  .summary-owner-row .so-name { color: var(--text); font-weight: 600; }
+  .summary-owner-row .so-amount { color: var(--text); font-weight: 700; }
+
+  .refund-qty-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .refund-qty-row .rq-main { flex: 1; font-size: 13.5px; color: var(--text); }
+  .refund-qty-row .rq-stepper { display: flex; align-items: center; gap: 8px; }
+  .refund-qty-row .rq-stepper button {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--surface2);
+    font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div id="conn-status" class="offline">
+    <span class="dot"></span>
+    <span class="label">ออฟไลน์</span>
+  </div>
+
+  <!-- TOP NAV: โชว์ร้านปัจจุบัน (ซ่อนถ้ายังไม่มีร้าน active)
+       แตะได้: จากหน้าขาย -> ไปหน้าจัดการร้าน (สลับ/สร้างร้าน), จากหน้าอื่น -> กลับไปหน้าขาย -->
+  <div id="topnav" onclick="handleTopNavTap()" style="cursor:pointer;">
+    <div class="tn-badge" id="tn-badge">🏪</div>
+    <div class="tn-text">
+      <div class="tn-name" id="tn-name">—</div>
+      <div class="tn-code" id="tn-code">—</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: Mode Selector
+       ══════════════════════════════════════════════ -->
+  <div id="page-mode-selector" class="page">
+    <div class="ms-logo">POS บูธ</div>
+    <div class="ms-sub">เลือกโหมดการใช้งานของเครื่องนี้</div>
+
+    <button class="ms-btn owner" onclick="selectMode('owner')">
+      <div class="ms-icon">🏪</div>
+      <div>
+        <div class="ms-label">ร้านค้า</div>
+        <div class="ms-desc">สำหรับ iPad เจ้าของร้าน — จัดการร้าน/สินค้า/ขาย</div>
+      </div>
+    </button>
+
+    <button class="ms-btn employee" onclick="selectMode('employee')">
+      <div class="ms-icon">📱</div>
+      <div>
+        <div class="ms-label">พนักงาน</div>
+        <div class="ms-desc">สำหรับมือถือพนักงาน — เข้าห้องแล้วขายได้เลย</div>
+      </div>
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: Store Management (จัดการร้าน) — ฝั่ง iPad เท่านั้น
+       ══════════════════════════════════════════════ -->
+  <div id="page-store-management" class="page">
+    <div class="sm-header">จัดการร้าน</div>
+    <div class="sm-list" id="store-list">
+      <!-- render โดย renderStoreList() -->
+    </div>
+    <button class="sm-fab" onclick="openCreateStoreModal()">+</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: วัตถุดิบ (เข้าจากเมนูตั้งค่า > จัดการร้าน)
+       ══════════════════════════════════════════════ -->
+  <div id="page-materials" class="page">
+    <div class="sub-header">
+      <button class="sub-back" onclick="closeSubPage()">←</button>
+      <div class="sub-title">วัตถุดิบ</div>
+    </div>
+    <div class="sm-list" id="materials-list">
+      <!-- render โดย renderMaterialsList() -->
+    </div>
+    <button class="sm-fab" onclick="openCreateMaterialModal()">+</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: เจ้าของ (เข้าจากเมนูตั้งค่า > จัดการร้าน)
+       ══════════════════════════════════════════════ -->
+  <div id="page-owners" class="page">
+    <div class="sub-header">
+      <button class="sub-back" onclick="closeSubPage()">←</button>
+      <div class="sub-title">เจ้าของ</div>
+    </div>
+    <div class="sm-list" id="owners-list">
+      <!-- render โดย renderOwnersList() -->
+    </div>
+    <button class="sm-fab" onclick="openCreateOwnerModal()">+</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: สินค้า (เข้าจากเมนูตั้งค่า > จัดการร้าน)
+       ══════════════════════════════════════════════ -->
+  <div id="page-products" class="page">
+    <div class="sub-header">
+      <button class="sub-back" onclick="closeSubPage()">←</button>
+      <div class="sub-title">สินค้า</div>
+    </div>
+    <div class="sm-list" id="products-list">
+      <!-- render โดย renderProductsList() -->
+    </div>
+    <button class="sm-fab" onclick="openCreateProductModal()">+</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: ขาย (POS) หลัก
+       ══════════════════════════════════════════════ -->
+  <div id="page-pos" class="page">
+    <div class="pos-grid" id="pos-product-grid">
+      <!-- render โดย renderPOSGrid() -->
+    </div>
+    <button class="cart-bar" id="cart-bar" onclick="openCartSheet()">
+      <span class="cart-bar-count" id="cart-bar-count">0</span>
+      <span class="cart-bar-label">ตะกร้า</span>
+      <span class="cart-bar-total" id="cart-bar-total">0 บ.</span>
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: คิดเงินทอน (เงินสด)
+       ══════════════════════════════════════════════ -->
+  <div id="page-pay-cash" class="page pay-page">
+    <div class="pay-back-row">
+      <button class="pay-back-btn" onclick="switchPage('page-pos')">←</button>
+    </div>
+    <div class="pay-total-box">
+      <div class="ptb-label">ยอดที่ต้องชำระ</div>
+      <div class="ptb-amount" id="cash-total-amount">0 บ.</div>
+    </div>
+    <div class="cash-input-wrap">
+      <input type="number" inputmode="decimal" id="cash-received-input" placeholder="รับเงินมา (บาท)" oninput="renderCashChange()">
+    </div>
+    <div class="cash-quick-row" id="cash-quick-row"><!-- render โดย renderCashQuickButtons() --></div>
+    <div class="cash-change-box" id="cash-change-box">
+      <div class="ccb-label">เงินทอน</div>
+      <div class="ccb-amount" id="cash-change-amount">0 บ.</div>
+    </div>
+    <div class="pay-confirm-row">
+      <button class="btn btn-primary" id="cash-confirm-btn" style="width:100%;" onclick="confirmCashPayment()">ยืนยันรับเงิน</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: จ่าย QR (พร้อมเพย์)
+       ══════════════════════════════════════════════ -->
+  <div id="page-pay-qr" class="page pay-page">
+    <div class="pay-back-row">
+      <button class="pay-back-btn" onclick="switchPage('page-pos')">←</button>
+    </div>
+    <div class="pay-total-box">
+      <div class="ptb-label">ยอดที่ต้องชำระ</div>
+      <div class="ptb-amount" id="qr-total-amount">0 บ.</div>
+    </div>
+    <div id="qr-page-body"><!-- render โดย renderQRPage() --></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: PAID (ชำระสำเร็จ)
+       ══════════════════════════════════════════════ -->
+  <div id="page-paid" class="page paid-page">
+    <div class="paid-icon">✓</div>
+    <div class="paid-title">ชำระเงินสำเร็จ</div>
+    <div class="paid-amount" id="paid-amount">0 บ.</div>
+    <div class="paid-sub" id="paid-sub"></div>
+    <div class="paid-actions">
+      <button class="btn btn-primary" onclick="goToReceiptPage(_lastSaleId, true)">🧾 ดูใบเสร็จ</button>
+      <button class="btn btn-secondary" onclick="startNewSale()">+ ทำรายการใหม่</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: ใบเสร็จ (รายละเอียดบิล + คืนเงิน)
+       ══════════════════════════════════════════════ -->
+  <div id="page-receipt" class="page receipt-page">
+    <div class="sub-page-header">
+      <button class="pay-back-btn" onclick="closeReceiptPage()">←</button>
+      <div class="sph-title">ใบเสร็จ</div>
+    </div>
+    <div class="sub-page-body" id="receipt-body"><!-- render โดย renderReceiptPage() --></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: ประวัติการขาย
+       ══════════════════════════════════════════════ -->
+  <div id="page-sales-history" class="page history-page">
+    <div class="sub-page-header">
+      <button class="pay-back-btn" onclick="closeSubPage()">←</button>
+      <div class="sph-title">ใบเสร็จทั้งหมด</div>
+    </div>
+    <div class="sub-page-body" id="sales-history-body"><!-- render โดย renderSalesHistory() --></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: สรุปยอด / Export-Import
+       ══════════════════════════════════════════════ -->
+  <div id="page-summary" class="page summary-page">
+    <div class="sub-page-header">
+      <button class="pay-back-btn" onclick="closeSubPage()">←</button>
+      <div class="sph-title">สรุปยอด / ข้อมูล</div>
+    </div>
+    <div class="sub-page-body" id="summary-body"><!-- render โดย renderSummaryPage() --></div>
+  </div>
+
+  <!-- page อื่นๆ (P2P, ฝั่งพนักงาน ฯลฯ) จะเพิ่มในบล็อคถัดไป -->
+
+  <!-- ปุ่มตั้งค่าลอย มุมซ้ายล่าง — โผล่ทุกหน้าฝั่งร้านค้าที่ล็อกอินโหมดแล้ว -->
+  <button id="settings-fab" onclick="openSettingsPanel()">⚙️</button>
+
+  <div id="toast-container"></div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SETTINGS PANEL — สไลด์เต็มจอทับหน้าปัจจุบัน
+     ══════════════════════════════════════════════ -->
+<div id="settings-panel">
+  <div class="sp-header">
+    <div class="sp-title">ตั้งค่า</div>
+    <button class="sp-close" onclick="closeSettingsPanel()">✕</button>
+  </div>
+
+  <div class="sp-body">
+
+    <!-- หมวด 1: จัดการร้าน -->
+    <div class="sp-category" id="sp-category-manage">
+      <div class="sp-category-row" onclick="toggleCategory('sp-category-manage')">
+        <div class="sp-icon">📦</div>
+        <div class="sp-main">
+          <div class="sp-label">จัดการร้าน</div>
+          <div class="sp-sub">วัตถุดิบ · เจ้าของ · สินค้า · กาชา</div>
+        </div>
+        <div class="sp-chevron">›</div>
+      </div>
+      <div class="sp-detail">
+        <button class="sp-detail-btn" onclick="goToMaterialsPage()">🧂 วัตถุดิบ</button>
+        <button class="sp-detail-btn" onclick="goToOwnersPage()">🧑‍💼 เจ้าของ</button>
+        <button class="sp-detail-btn" onclick="goToProductsPage()">🛍️ สินค้า</button>
+        <button class="sp-detail-btn" onclick="showToast('กาชา — จะเปิดใช้งานในบล็อคถัดไป')">🎰 กาชา</button>
+        <button class="sp-detail-btn" onclick="closeSettingsPanel(); openPromptPaySettings();">💳 ตั้งค่า PromptPay</button>
+      </div>
+    </div>
+
+    <!-- หมวด 2: ใบเสร็จ/Refund -->
+    <div class="sp-category">
+      <div class="sp-category-row" onclick="closeSettingsPanel(); goToSalesHistoryPage();">
+        <div class="sp-icon">🧾</div>
+        <div class="sp-main">
+          <div class="sp-label">ใบเสร็จ / Refund</div>
+          <div class="sp-sub">ดูบิล · คืนเงิน</div>
+        </div>
+        <div class="sp-chevron">›</div>
+      </div>
+    </div>
+
+    <!-- หมวด 3: ข้อมูล/รายงาน -->
+    <div class="sp-category">
+      <div class="sp-category-row" onclick="closeSettingsPanel(); goToSummaryPage();">
+        <div class="sp-icon">📊</div>
+        <div class="sp-main">
+          <div class="sp-label">ข้อมูล / รายงาน</div>
+          <div class="sp-sub">สรุปยอด · Export / Import</div>
+        </div>
+        <div class="sp-chevron">›</div>
+      </div>
+    </div>
+
+    <!-- หมวด 4: ระบบ (ใช้งานได้จริงแล้ว — สลับโหมด + โซนอันตราย) -->
+    <div class="sp-category" id="sp-category-system">
+      <div class="sp-category-row" onclick="toggleCategory('sp-category-system')">
+        <div class="sp-icon">⚙️</div>
+        <div class="sp-main">
+          <div class="sp-label">ระบบ</div>
+          <div class="sp-sub">สลับโหมด · โซนอันตราย</div>
+        </div>
+        <div class="sp-chevron">›</div>
+      </div>
+      <div class="sp-detail">
+        <button class="sp-detail-btn" onclick="switchAppMode()">🔁 สลับโหมด (ร้านค้า / พนักงาน)</button>
+
+        <button class="sp-detail-btn danger" onclick="toggleDangerZone()">⚠️ โซนอันตราย</button>
+
+        <div id="danger-zone-options" style="display:none; flex-direction:column; gap:10px;">
+          <button class="sp-detail-btn danger-solid" onclick="clearActiveStoreData()">ลบข้อมูลร้าน (เก็บร้านไว้)</button>
+          <button class="sp-detail-btn danger-solid" onclick="deleteActiveStoreEntirely()">ลบร้านนี้ทั้งหมด</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: สร้างร้านใหม่
+     ══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-create-store">
+  <div class="modal-panel">
+    <div class="modal-title">สร้างร้านใหม่</div>
+
+    <div class="form-group">
+      <label class="form-label">ชื่อร้าน</label>
+      <input type="text" class="form-input" id="input-store-name" placeholder="เช่น ร้าน A - ขายแว่น">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">รหัสห้อง (สุ่มอัตโนมัติ แก้ไขไม่ได้)</label>
+      <input type="text" class="form-input" id="input-room-code" readonly>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">เลือกสี</label>
+      <div class="swatch-row" id="color-swatch-row"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">เลือกไอคอน</label>
+      <div class="icon-row" id="icon-choice-row"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-create-store')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitCreateStore()">สร้างร้าน</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: เพิ่ม/แก้ไข สินค้า
+     (วางไว้ก่อน modal-material / modal-owner ใน DOM โดยตั้งใจ —
+      เวลากด "+ เพิ่มวัตถุดิบใหม่/+เพิ่มเจ้าของ" จากในนี้ จะเปิดโมดัลนั้นซ้อนทับ
+      ให้เห็นด้านบนแบบไม่ต้องปิดฟอร์มสินค้าที่กรอกค้างไว้)
+     ══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-product">
+  <div class="modal-panel">
+    <div class="modal-title" id="product-modal-title">เพิ่มสินค้า</div>
+
+    <div class="form-group">
+      <label class="form-label">ชื่อสินค้า</label>
+      <input type="text" class="form-input" id="input-product-name" placeholder="เช่น แว่นกันแดดลาย A">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">ไอคอนสินค้า</label>
+      <div class="icon-row" id="product-icon-choice-row"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">เจ้าของสินค้า</label>
+      <div class="chip-row" id="product-owner-chip-row"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">รายการวัตถุดิบที่ใช้ (ไม่บังคับ — ถ้าไม่เพิ่ม จะกรอกต้นทุนเองด้านล่างแทน)</label>
+      <div class="recipe-section">
+        <div id="product-recipe-lines"></div>
+        <div class="recipe-actions">
+          <button type="button" class="recipe-action-btn" onclick="addRecipeLine()">+ เพิ่มรายการ</button>
+          <button type="button" class="recipe-action-btn" onclick="openMaterialModalFromProduct()">+ เพิ่มวัตถุดิบใหม่</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">
+        ต้นทุนต่อชิ้น (บาท)
+        <span id="product-cost-mode-hint" style="color:var(--text-dim); font-weight:400;"></span>
+      </label>
+      <input type="number" inputmode="decimal" class="form-input" id="input-product-manual-cost"
+        placeholder="0" oninput="updateProductCostAndProfitPreview()">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">ราคาขาย (บาท)</label>
+      <input type="number" inputmode="decimal" class="form-input" id="input-product-price"
+        placeholder="0" oninput="updateProductCostAndProfitPreview()">
+    </div>
+
+    <div class="profit-preview positive" id="product-profit-preview">กำไร: — บาท / ชิ้น</div>
+
+    <div class="form-checkbox-row">
+      <input type="checkbox" id="input-product-stock-enabled" onchange="toggleProductStockQtyVisibility()">
+      <label for="input-product-stock-enabled">มีสต็อกสินค้า (นับจำนวนขายได้)</label>
+    </div>
+
+    <div class="form-group" id="product-stock-qty-group" style="display:none;">
+      <label class="form-label">จำนวนสต็อกเริ่มต้น</label>
+      <input type="number" inputmode="decimal" class="form-input" id="input-product-stock-qty" placeholder="0">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-product')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitProduct()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: เพิ่ม/แก้ไข วัตถุดิบ
+     ══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-material">
+  <div class="modal-panel">
+    <div class="modal-title" id="material-modal-title">เพิ่มวัตถุดิบ</div>
+
+    <div class="form-group">
+      <label class="form-label">ชื่อวัตถุดิบ</label>
+      <input type="text" class="form-input" id="input-material-name" placeholder="เช่น ลูกปัดแก้ว">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">ราคาที่ซื้อทั้งหมด (บาท)</label>
+      <input type="number" inputmode="decimal" class="form-input" id="input-material-total-cost"
+        placeholder="0" oninput="updateMaterialUnitCostPreview()">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">จำนวนที่ได้</label>
+      <input type="number" inputmode="decimal" class="form-input" id="input-material-qty"
+        placeholder="0" oninput="updateMaterialUnitCostPreview()">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">หน่วยนับ</label>
+      <input type="text" class="form-input" id="input-material-unit"
+        placeholder="เช่น ชิ้น, กรัม, ซอง, ขวด" oninput="updateMaterialUnitCostPreview()">
+    </div>
+
+    <div class="unit-cost-preview" id="material-unit-cost-preview">ราคาต่อหน่วย: —</div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-material')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitMaterial()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: เพิ่ม/แก้ไข เจ้าของ
+     ══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-owner">
+  <div class="modal-panel">
+    <div class="modal-title" id="owner-modal-title">เพิ่มเจ้าของ</div>
+
+    <div class="form-group">
+      <label class="form-label">ชื่อเจ้าของ</label>
+      <input type="text" class="form-input" id="input-owner-name" placeholder="เช่น พี่แนน">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">เลือกสี</label>
+      <div class="swatch-row" id="owner-color-swatch-row"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">เลือกไอคอน</label>
+      <div class="icon-row" id="owner-icon-choice-row"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-owner')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitOwner()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: ตะกร้าสินค้า (หน้าขาย)
+     ══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-cart">
+  <div class="modal-panel">
+    <div class="modal-title">ตะกร้าสินค้า</div>
+
+    <div id="cart-lines-container">
+      <!-- render โดย renderCartSheet() -->
+    </div>
+
+    <div class="cart-total-row">
+      <span>ยอดรวม</span>
+      <span class="ct-amount" id="cart-total-amount">0 บ.</span>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-cart')">ปิด</button>
+      <button class="btn btn-primary" id="cart-charge-btn" onclick="chargeCart()">เก็บเงิน</button>
+    </div>
+
+    <div class="cart-clear-link" onclick="clearCartConfirm()">ล้างตะกร้าทั้งหมด</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: เลือกวิธีจ่าย
+     ══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-payment-method">
+  <div class="modal-panel">
+    <div class="modal-title">เลือกวิธีจ่าย</div>
+    <button class="pay-method-btn" onclick="closeModal('modal-payment-method'); goToCashPage();">
+      <div class="pm-icon">💵</div>
+      <div>
+        <div class="pm-label">เงินสด</div>
+        <div class="pm-sub">คิดเงินทอนให้อัตโนมัติ</div>
+      </div>
+    </button>
+    <button class="pay-method-btn" onclick="closeModal('modal-payment-method'); goToQRPage();">
+      <div class="pm-icon">📱</div>
+      <div>
+        <div class="pm-label">พร้อมเพย์ (QR)</div>
+        <div class="pm-sub">โชว์ QR ให้ลูกค้าสแกน</div>
+      </div>
+    </button>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-payment-method')">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: ตั้งค่า PromptPay
+     ══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-promptpay">
+  <div class="modal-panel">
+    <div class="modal-title">ตั้งค่า PromptPay</div>
+    <div class="form-group">
+      <label>เบอร์โทร หรือ เลขบัตรประชาชน</label>
+      <input type="text" id="input-promptpay-id" placeholder="เช่น 0812345678 หรือ 13 หลัก">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-promptpay')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitPromptPaySettings()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: คืนเงิน (Refund)
+     ══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-refund">
+  <div class="modal-panel">
+    <div class="modal-title">คืนเงิน</div>
+    <div id="refund-lines-container"><!-- render โดย openRefundModal() --></div>
+    <div class="cart-total-row">
+      <span>ยอดคืน</span>
+      <span class="ct-amount" id="refund-total-amount">0 บ.</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-refund')">ยกเลิก</button>
+      <button class="btn btn-primary" id="refund-confirm-btn" onclick="submitRefund()">ยืนยันคืนเงิน</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   UTILITY FUNCTIONS
+   ══════════════════════════════════════════════════════════════ */
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function fmt(n) {
+  n = Number(n) || 0;
+  return n.toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function showToast(message, duration = 2200) {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = message;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+function setConnStatus(online) {
+  const el = document.getElementById('conn-status');
+  el.classList.toggle('online', online);
+  el.classList.toggle('offline', !online);
+  el.querySelector('.label').textContent = online ? 'ออนไลน์' : 'ออฟไลน์';
+}
+
+/* สลับหน้า (แทนที่ switchTab เดิม — ตอนนี้ไม่มี tab bar แล้ว
+   หน้าอื่นๆ จะถูกเพิ่มเข้ามาในบล็อคถัดไปแล้ว list นี้จะยาวขึ้น) */
+function switchPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById(pageId);
+  if (target) target.classList.add('active');
+}
+
+/* Modal helpers — เผื่อไว้สำหรับบล็อคถัดไป (ยังไม่มี modal ใน DOM ตอนนี้) */
+function openModal(modalId) {
+  const el = document.getElementById(modalId);
+  if (el) el.classList.add('open');
+}
+function closeModal(modalId) {
+  const el = document.getElementById(modalId);
+  if (el) el.classList.remove('open');
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   STORE REGISTRY
+   ── รายชื่อร้านทั้งหมดที่เคยสร้างในเครื่องนี้ เก็บใน localStorage
+      (ไม่ใช่ IndexedDB เพราะต้องอ่านได้ก่อนเปิด DB ของร้านใดร้านหนึ่ง)
+   ── โครงสร้างแต่ละร้าน:
+      { roomCode, name, color, icon, createdAt }
+   ══════════════════════════════════════════════════════════════ */
+
+const STORE_REGISTRY_KEY = 'pos_store_registry';
+const ACTIVE_ROOM_KEY    = 'pos_active_room';
+const MODE_KEY           = 'pos_mode';
+
+function getStoreRegistry() {
+  try {
+    return JSON.parse(localStorage.getItem(STORE_REGISTRY_KEY)) || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveStoreRegistry(list) {
+  localStorage.setItem(STORE_REGISTRY_KEY, JSON.stringify(list));
+}
+
+function getActiveRoomCode() {
+  return localStorage.getItem(ACTIVE_ROOM_KEY) || null;
+}
+
+function setActiveRoomCode(roomCode) {
+  localStorage.setItem(ACTIVE_ROOM_KEY, roomCode);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   DB LAYER (IndexedDB) — แยกฐานข้อมูลต่อร้านตาม "รหัสห้อง"
+   ชื่อ DB: pos-db-{roomCode}
+   ══════════════════════════════════════════════════════════════ */
+
+const DB_VERSION = 1;
+// object store ทั้งหมดที่ทุกร้านต้องมี (schema เริ่มต้น — บล็อคถัดไปอาจเพิ่ม store ใหม่)
+const DB_STORES = ['materials', 'owners', 'products', 'gachaMachines', 'sales', 'settings'];
+
+let _dbInstance = null;
+let _dbRoomCode = null;
+
+function dbName(roomCode) {
+  return `pos-db-${roomCode}`;
+}
+
+/**
+ * เปิด (หรือสร้าง) IndexedDB ของร้านตามรหัสห้อง
+ * ต้องเรียกทุกครั้งที่สลับร้าน (active room เปลี่ยน)
+ */
+function initDB(roomCode) {
+  return new Promise((resolve, reject) => {
+    if (_dbInstance && _dbRoomCode === roomCode) {
+      resolve(_dbInstance);
+      return;
+    }
+    // ปิด instance เก่าก่อนสลับร้าน
+    if (_dbInstance) {
+      _dbInstance.close();
+      _dbInstance = null;
+    }
+
+    const req = indexedDB.open(dbName(roomCode), DB_VERSION);
+
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      DB_STORES.forEach(storeName => {
+        if (!db.objectStoreNames.contains(storeName)) {
+          db.createObjectStore(storeName, { keyPath: 'id' });
+        }
+      });
+    };
+
+    req.onsuccess = (e) => {
+      _dbInstance = e.target.result;
+      _dbRoomCode = roomCode;
+      resolve(_dbInstance);
+    };
+
+    req.onerror = (e) => {
+      console.error('initDB error', e.target.error);
+      reject(e.target.error);
+    };
+  });
+}
+
+function _getDB() {
+  if (!_dbInstance) throw new Error('DB ยังไม่ได้เปิด — เรียก initDB(roomCode) ก่อน');
+  return _dbInstance;
+}
+
+function dbGetAll(storeName) {
+  return new Promise((resolve, reject) => {
+    const tx = _getDB().transaction(storeName, 'readonly');
+    const req = tx.objectStore(storeName).getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+function dbPut(storeName, value) {
+  return new Promise((resolve, reject) => {
+    const tx = _getDB().transaction(storeName, 'readwrite');
+    const req = tx.objectStore(storeName).put(value);
+    req.onsuccess = () => resolve(value);
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+function dbDelete(storeName, id) {
+  return new Promise((resolve, reject) => {
+    const tx = _getDB().transaction(storeName, 'readwrite');
+    const req = tx.objectStore(storeName).delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+function dbClear(storeName) {
+  return new Promise((resolve, reject) => {
+    const tx = _getDB().transaction(storeName, 'readwrite');
+    const req = tx.objectStore(storeName).clear();
+    req.onsuccess = () => resolve();
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+/**
+ * ลบฐานข้อมูลทั้งอันของร้าน (ใช้ตอนลบร้าน — บล็อค 2 จะเรียกใช้)
+ */
+function deleteStoreDB(roomCode) {
+  return new Promise((resolve, reject) => {
+    if (_dbRoomCode === roomCode && _dbInstance) {
+      _dbInstance.close();
+      _dbInstance = null;
+      _dbRoomCode = null;
+    }
+    const req = indexedDB.deleteDatabase(dbName(roomCode));
+    req.onsuccess = () => resolve();
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   MODE SELECTOR LOGIC
+   ══════════════════════════════════════════════════════════════ */
+
+function selectMode(mode) {
+  localStorage.setItem(MODE_KEY, mode);
+  routeAfterModeSelect(mode);
+}
+
+/**
+ * ตัดสินใจว่าจะไปหน้าไหนหลังเลือก/โหลดโหมด
+ * โหมดร้านค้า: ถ้ามีร้าน active + DB เปิดสำเร็จ → ไปหน้าขายเลย
+ *              ถ้ายังไม่มีร้าน active → ไปหน้าจัดการร้านให้เลือก/สร้างก่อน
+ */
+function routeAfterModeSelect(mode) {
+  if (mode === 'owner') {
+    showSettingsFab();
+    ensureActiveStoreDBReady().then(() => {
+      renderTopNav();
+      if (getActiveRoomCode()) {
+        goToPOSPage();
+      } else {
+        switchPage('page-store-management');
+        renderStoreList();
+      }
+    });
+  } else {
+    // TODO (บล็อค 9): เข้า flow พนักงาน (กรอกชื่อ → สแกน QR)
+    // ยังไม่มีหน้าพนักงานจริง — กันจอค้างว่างโดยพาไปหน้าเลือกโหมดไว้ก่อน
+    switchPage('page-mode-selector');
+    hideSettingsFab();
+    showToast('โหมดพนักงาน — รอบล็อคถัดไปสำหรับหน้ากรอกชื่อ/สแกน QR');
+  }
+}
+
+/**
+ * จุดเริ่มต้นแอป — เช็คว่าเคยเลือกโหมดไว้หรือยัง
+ */
+function bootApp() {
+  const savedMode = localStorage.getItem(MODE_KEY);
+  if (savedMode) {
+    // ข้ามหน้าเลือกโหมดไปเลยตามที่เคยเลือกไว้
+    routeAfterModeSelect(savedMode);
+  } else {
+    switchPage('page-mode-selector');
+  }
+}
+
+bootApp();
+
+
+/* ══════════════════════════════════════════════════════════════
+   STORE MANAGEMENT (หน้าสร้างห้อง/จัดการร้าน)
+   ══════════════════════════════════════════════════════════════ */
+
+const COLOR_PALETTE = [
+  '#16a34a', '#ea8a4c', '#e63976', '#2563eb',
+  '#9333ea', '#0891b2', '#ca8a04', '#475569'
+];
+
+const ICON_OPTIONS = ['🏪', '👓', '🍬', '👕', '🎮', '🎨', '📚', '🧸', '☕', '🍰', '🎴', '🧢'];
+
+let _pendingStoreColor = COLOR_PALETTE[0];
+let _pendingStoreIcon = ICON_OPTIONS[0];
+
+/** สุ่มรหัสห้อง 6 ตัว ผสมตัวอักษรพิมพ์ใหญ่ + ตัวเลข */
+function generateRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // ตัด O/0/I/1 กันสับสน
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+function renderStoreList() {
+  const registry = getStoreRegistry();
+  const activeRoom = getActiveRoomCode();
+  const container = document.getElementById('store-list');
+
+  if (registry.length === 0) {
+    container.innerHTML = `<div class="sm-empty">ยังไม่มีร้าน<br>กดปุ่ม + ด้านล่างเพื่อสร้างร้านแรก</div>`;
+    return;
+  }
+
+  container.innerHTML = registry.map(store => `
+    <div class="store-card ${store.roomCode === activeRoom ? 'active' : ''}">
+      <div class="sc-icon" style="background:${store.color}22;">${store.icon}</div>
+      <div class="sc-main" onclick="selectStore('${store.roomCode}')">
+        <div class="sc-name">${escapeHtml(store.name)}</div>
+        <div class="sc-code">รหัสห้อง ${store.roomCode}</div>
+        ${store.roomCode === activeRoom ? '<div class="sc-active-tag">● กำลังใช้งาน</div>' : ''}
+      </div>
+      <button class="sc-delete" onclick="deleteStoreConfirm('${store.roomCode}')">🗑</button>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderTopNav() {
+  const activeRoom = getActiveRoomCode();
+  const registry = getStoreRegistry();
+  const store = registry.find(s => s.roomCode === activeRoom);
+  const nav = document.getElementById('topnav');
+
+  if (!store) {
+    nav.classList.remove('show');
+    return;
+  }
+
+  nav.classList.add('show');
+  document.getElementById('tn-badge').textContent = store.icon;
+  document.getElementById('tn-badge').style.background = store.color + '22';
+  document.getElementById('tn-name').textContent = store.name;
+  document.getElementById('tn-code').textContent = `รหัสห้อง ${store.roomCode}`;
+}
+
+/** แตะแถบบนสุด (โชว์ร้าน active) — สลับไปมาระหว่างหน้าขาย กับ หน้าจัดการร้าน */
+function handleTopNavTap() {
+  if (!getActiveRoomCode()) return; // ไม่มีร้าน active ก็ไม่มีอะไรให้สลับ
+  const current = document.querySelector('.page.active');
+  if (current && current.id === 'page-pos') {
+    switchPage('page-store-management');
+    renderStoreList();
+  } else {
+    goToPOSPage();
+  }
+}
+
+/** เลือก/สลับร้าน active — เปิด DB ของร้านนั้นทันที */
+async function selectStore(roomCode) {
+  setActiveRoomCode(roomCode);
+  _cart = {}; // สลับร้าน = ตะกร้าเดิมอ้างอิงสินค้าคนละร้าน ต้องล้างทิ้ง
+  try {
+    await initDB(roomCode);
+    renderStoreList();
+    renderTopNav();
+    showToast('สลับร้านเรียบร้อย');
+  } catch (e) {
+    showToast('เปิดฐานข้อมูลร้านไม่สำเร็จ');
+    console.error(e);
+  }
+}
+
+/** ตอนเปิดแอป ถ้ามีร้าน active ค้างไว้ ให้เปิด DB รอไว้เงียบๆ */
+async function ensureActiveStoreDBReady() {
+  const activeRoom = getActiveRoomCode();
+  if (!activeRoom) return;
+  const exists = getStoreRegistry().some(s => s.roomCode === activeRoom);
+  if (!exists) {
+    // ร้าน active ถูกลบไปแล้วจากที่อื่น (เช่นล้างข้อมูล) — เคลียร์ทิ้ง
+    localStorage.removeItem(ACTIVE_ROOM_KEY);
+    _cart = {};
+    renderTopNav();
+    return;
+  }
+  try {
+    await initDB(activeRoom);
+  } catch (e) {
+    console.error('เปิด DB ร้าน active ไม่สำเร็จ', e);
+  }
+}
+
+function deleteStoreConfirm(roomCode) {
+  const registry = getStoreRegistry();
+  const store = registry.find(s => s.roomCode === roomCode);
+  if (!store) return;
+
+  const ok = confirm(`ลบร้าน "${store.name}" ?\n\nข้อมูลวัตถุดิบ/สินค้า/ประวัติขายทั้งหมดของร้านนี้จะหายถาวร ไม่สามารถกู้คืนได้`);
+  if (!ok) return;
+
+  deleteStoreDB(roomCode).finally(() => {
+    const updated = getStoreRegistry().filter(s => s.roomCode !== roomCode);
+    saveStoreRegistry(updated);
+
+    const wasActive = getActiveRoomCode() === roomCode;
+    if (wasActive) {
+      localStorage.removeItem(ACTIVE_ROOM_KEY);
+      _cart = {};
+    }
+
+    const currentPage = document.querySelector('.page.active');
+    if (wasActive && currentPage && currentPage.id === 'page-pos') {
+      switchPage('page-store-management');
+    }
+
+    renderStoreList();
+    renderTopNav();
+    showToast('ลบร้านแล้ว');
+  });
+}
+
+/* ── Modal: สร้างร้านใหม่ ── */
+
+function openCreateStoreModal() {
+  document.getElementById('input-store-name').value = '';
+  document.getElementById('input-room-code').value = generateRoomCode();
+
+  _pendingStoreColor = COLOR_PALETTE[0];
+  _pendingStoreIcon = ICON_OPTIONS[0];
+
+  const colorRow = document.getElementById('color-swatch-row');
+  colorRow.innerHTML = COLOR_PALETTE.map((c, i) => `
+    <button class="swatch ${i === 0 ? 'selected' : ''}" style="background:${c}"
+      data-color="${c}" onclick="pickColor('${c}', this)"></button>
+  `).join('');
+
+  const iconRow = document.getElementById('icon-choice-row');
+  iconRow.innerHTML = ICON_OPTIONS.map((icon, i) => `
+    <button class="icon-choice ${i === 0 ? 'selected' : ''}"
+      data-icon="${icon}" onclick="pickIcon('${icon}', this)">${icon}</button>
+  `).join('');
+
+  openModal('modal-create-store');
+}
+
+function pickColor(color, btnEl) {
+  _pendingStoreColor = color;
+  document.querySelectorAll('#color-swatch-row .swatch').forEach(el => el.classList.remove('selected'));
+  btnEl.classList.add('selected');
+}
+
+function pickIcon(icon, btnEl) {
+  _pendingStoreIcon = icon;
+  document.querySelectorAll('#icon-choice-row .icon-choice').forEach(el => el.classList.remove('selected'));
+  btnEl.classList.add('selected');
+}
+
+async function submitCreateStore() {
+  const nameInput = document.getElementById('input-store-name');
+  const name = nameInput.value.trim();
+  const roomCode = document.getElementById('input-room-code').value;
+
+  if (!name) {
+    showToast('กรุณากรอกชื่อร้าน');
+    nameInput.focus();
+    return;
+  }
+
+  const registry = getStoreRegistry();
+  const isDuplicate = registry.some(s => s.name.trim().toLowerCase() === name.toLowerCase());
+  if (isDuplicate) {
+    showToast('มีชื่อร้านนี้อยู่แล้วในเครื่องนี้ ตั้งชื่ออื่น');
+    nameInput.focus();
+    return;
+  }
+
+  const newStore = {
+    roomCode,
+    name,
+    color: _pendingStoreColor,
+    icon: _pendingStoreIcon,
+    createdAt: Date.now()
+  };
+
+  registry.push(newStore);
+  saveStoreRegistry(registry);
+  setActiveRoomCode(roomCode);
+
+  try {
+    await initDB(roomCode);
+  } catch (e) {
+    console.error('สร้าง DB ร้านใหม่ไม่สำเร็จ', e);
+  }
+
+  closeModal('modal-create-store');
+  renderStoreList();
+  renderTopNav();
+  showToast(`สร้างร้าน "${name}" แล้ว`);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   SETTINGS PANEL (เมนูตั้งค่าใหม่)
+   ══════════════════════════════════════════════════════════════ */
+
+function showSettingsFab() {
+  document.getElementById('settings-fab').classList.add('show');
+}
+function hideSettingsFab() {
+  document.getElementById('settings-fab').classList.remove('show');
+}
+
+function openSettingsPanel() {
+  document.getElementById('settings-panel').classList.add('open');
+}
+function closeSettingsPanel() {
+  document.getElementById('settings-panel').classList.remove('open');
+  // พับทุกหมวด/โซนอันตรายกลับก่อนทุกครั้งที่ปิดพาเนล
+  document.querySelectorAll('.sp-category.expanded').forEach(el => el.classList.remove('expanded'));
+  document.getElementById('danger-zone-options').style.display = 'none';
+}
+
+/** ใช้ร่วมกันได้ทุกหมวดในเมนูตั้งค่าที่ต้องขยาย/พับ (จัดการร้าน, ระบบ ฯลฯ) */
+function toggleCategory(categoryId) {
+  document.getElementById(categoryId).classList.toggle('expanded');
+}
+
+function toggleDangerZone() {
+  const el = document.getElementById('danger-zone-options');
+  el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
+}
+
+/** สลับโหมด ร้านค้า ↔ พนักงาน — ไม่ต้อง confirm ตามที่ตกลงกันไว้ */
+function switchAppMode() {
+  localStorage.removeItem(MODE_KEY);
+  closeSettingsPanel();
+  hideSettingsFab();
+  switchPage('page-mode-selector');
+}
+
+/** ลบข้อมูลทุก object store ของร้าน active แต่ยังเก็บตัวร้าน (registry) ไว้ */
+async function clearActiveStoreData() {
+  const roomCode = getActiveRoomCode();
+  if (!roomCode) {
+    showToast('ยังไม่มีร้านที่ active อยู่');
+    return;
+  }
+  const ok = confirm('ลบข้อมูลวัตถุดิบ/เจ้าของ/สินค้า/กาชา/ประวัติขายทั้งหมดของร้านนี้?\n\nร้านจะยังอยู่ แต่ข้อมูลข้างในหายหมด กู้คืนไม่ได้');
+  if (!ok) return;
+
+  try {
+    await initDB(roomCode);
+    for (const storeName of DB_STORES) {
+      if (storeName === 'settings') continue; // เก็บค่าตั้งค่าร้าน (เช่น PromptPay ในบล็อคถัดไป) ไว้
+      await dbClear(storeName);
+    }
+    toggleDangerZone();
+    closeSettingsPanel();
+    _cart = {};
+    const currentPage = document.querySelector('.page.active');
+    if (currentPage && currentPage.id === 'page-pos') {
+      await loadPOSProducts();
+      renderPOSGrid();
+      renderCartBar();
+    }
+    showToast('ลบข้อมูลร้านเรียบร้อย');
+  } catch (e) {
+    console.error(e);
+    showToast('ลบข้อมูลไม่สำเร็จ');
+  }
+}
+
+/** ลบร้าน active ทั้งร้าน (ใช้ logic เดียวกับหน้าจัดการร้าน) */
+function deleteActiveStoreEntirely() {
+  const roomCode = getActiveRoomCode();
+  if (!roomCode) {
+    showToast('ยังไม่มีร้านที่ active อยู่');
+    return;
+  }
+  closeSettingsPanel();
+  deleteStoreConfirm(roomCode);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   SUB-PAGE NAVIGATION (จำหน้าก่อนหน้าไว้ เพื่อกดย้อนกลับได้)
+   ใช้กับหน้าที่เข้าจากเมนูตั้งค่า > จัดการร้าน เช่น วัตถุดิบ/เจ้าของ
+   ══════════════════════════════════════════════════════════════ */
+
+let _subPagePreviousId = null;
+
+function openSubPage(pageId) {
+  const current = document.querySelector('.page.active');
+  _subPagePreviousId = current ? current.id : 'page-store-management';
+  switchPage(pageId);
+}
+
+function closeSubPage() {
+  const target = _subPagePreviousId || 'page-store-management';
+  switchPage(target);
+  // ถ้าย้อนกลับเข้าหน้าขาย ให้โหลดสินค้าใหม่เผื่อมีการแก้ไขระหว่างอยู่หน้าย่อย
+  if (target === 'page-pos') {
+    loadPOSProducts().then(() => {
+      renderPOSGrid();
+      renderCartBar();
+    });
+  }
+}
+
+function goToMaterialsPage() {
+  if (!getActiveRoomCode()) {
+    showToast('กรุณาเลือก/สร้างร้านก่อน');
+    return;
+  }
+  closeSettingsPanel();
+  openSubPage('page-materials');
+  renderMaterialsList();
+}
+
+function goToOwnersPage() {
+  if (!getActiveRoomCode()) {
+    showToast('กรุณาเลือก/สร้างร้านก่อน');
+    return;
+  }
+  closeSettingsPanel();
+  openSubPage('page-owners');
+  renderOwnersList();
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   วัตถุดิบ (Materials)
+   ── เก็บไว้แค่ "รายการ" ใช้คำนวณต้นทุนสินค้า ไม่มีสต็อก/เตือนของหมด
+   ── โครงสร้าง: { id, name, totalCost, qty, unit, unitCost, createdAt }
+   ══════════════════════════════════════════════════════════════ */
+
+let _editingMaterialId = null;
+let _editingMaterialData = null; // เก็บ record เดิมไว้ตอนแก้ไข เพื่อคง createdAt
+
+async function renderMaterialsList() {
+  const container = document.getElementById('materials-list');
+  container.innerHTML = '<div class="sm-empty">กำลังโหลด...</div>';
+  try {
+    const list = await dbGetAll('materials');
+    if (list.length === 0) {
+      container.innerHTML = `<div class="sm-empty">ยังไม่มีวัตถุดิบ<br>กดปุ่ม + ด้านล่างเพื่อเพิ่มวัตถุดิบแรก</div>`;
+      return;
+    }
+    list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    container.innerHTML = list.map(m => `
+      <div class="item-card">
+        <div class="item-main" onclick="openEditMaterialModal('${m.id}')">
+          <div class="item-name">${escapeHtml(m.name)}</div>
+          <div class="item-sub">${fmt(m.unitCost)} บาท / ${escapeHtml(m.unit)}</div>
+          <div class="item-sub2">ซื้อ ${fmt(m.totalCost)} บาท ÷ ${fmt(m.qty)} ${escapeHtml(m.unit)}</div>
+        </div>
+        <button class="item-delete" onclick="deleteMaterialConfirm('${m.id}')">🗑</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = '<div class="sm-empty">โหลดข้อมูลไม่สำเร็จ</div>';
+  }
+}
+
+function updateMaterialUnitCostPreview() {
+  const totalCost = parseFloat(document.getElementById('input-material-total-cost').value) || 0;
+  const qty = parseFloat(document.getElementById('input-material-qty').value) || 0;
+  const unit = document.getElementById('input-material-unit').value.trim() || 'หน่วย';
+  const preview = document.getElementById('material-unit-cost-preview');
+
+  if (qty > 0) {
+    preview.textContent = `ราคาต่อหน่วย: ${fmt(totalCost / qty)} บาท / ${unit}`;
+  } else {
+    preview.textContent = 'ราคาต่อหน่วย: —';
+  }
+}
+
+function openCreateMaterialModal() {
+  _editingMaterialId = null;
+  _editingMaterialData = null;
+
+  document.getElementById('material-modal-title').textContent = 'เพิ่มวัตถุดิบ';
+  document.getElementById('input-material-name').value = '';
+  document.getElementById('input-material-total-cost').value = '';
+  document.getElementById('input-material-qty').value = '';
+  document.getElementById('input-material-unit').value = '';
+  updateMaterialUnitCostPreview();
+
+  openModal('modal-material');
+}
+
+async function openEditMaterialModal(id) {
+  const list = await dbGetAll('materials');
+  const m = list.find(x => x.id === id);
+  if (!m) return;
+
+  _editingMaterialId = id;
+  _editingMaterialData = m;
+
+  document.getElementById('material-modal-title').textContent = 'แก้ไขวัตถุดิบ';
+  document.getElementById('input-material-name').value = m.name;
+  document.getElementById('input-material-total-cost').value = m.totalCost;
+  document.getElementById('input-material-qty').value = m.qty;
+  document.getElementById('input-material-unit').value = m.unit;
+  updateMaterialUnitCostPreview();
+
+  openModal('modal-material');
+}
+
+async function submitMaterial() {
+  const nameInput = document.getElementById('input-material-name');
+  const name = nameInput.value.trim();
+  const totalCost = parseFloat(document.getElementById('input-material-total-cost').value);
+  const qty = parseFloat(document.getElementById('input-material-qty').value);
+  const unit = document.getElementById('input-material-unit').value.trim();
+
+  if (!name) {
+    showToast('กรุณากรอกชื่อวัตถุดิบ');
+    nameInput.focus();
+    return;
+  }
+  if (!totalCost || totalCost <= 0) {
+    showToast('กรุณากรอกราคาที่ซื้อให้ถูกต้อง');
+    return;
+  }
+  if (!qty || qty <= 0) {
+    showToast('กรุณากรอกจำนวนที่ได้ให้ถูกต้อง');
+    return;
+  }
+  if (!unit) {
+    showToast('กรุณากรอกหน่วยนับ');
+    return;
+  }
+
+  const record = {
+    id: _editingMaterialId || uid(),
+    name,
+    totalCost,
+    qty,
+    unit,
+    unitCost: totalCost / qty,
+    createdAt: _editingMaterialData ? _editingMaterialData.createdAt : Date.now()
+  };
+
+  try {
+    await dbPut('materials', record);
+    closeModal('modal-material');
+    renderMaterialsList();
+    showToast(_editingMaterialId ? 'แก้ไขวัตถุดิบแล้ว' : 'เพิ่มวัตถุดิบแล้ว');
+
+    // ถ้าเปิดโมดัลนี้มาจากฟอร์มสินค้า (กด "+ เพิ่มวัตถุดิบใหม่") ให้รีเฟรชรายชื่อวัตถุดิบ
+    // ในสูตรของฟอร์มสินค้าที่ยังเปิดค้างอยู่ด้านหลัง
+    if (_productMaterialModalReturnFlag) {
+      _productMaterialModalReturnFlag = false;
+      _productModalMaterials = await dbGetAll('materials');
+      renderProductRecipeLines();
+    }
+  } catch (e) {
+    console.error(e);
+    showToast('บันทึกไม่สำเร็จ');
+  }
+}
+
+async function deleteMaterialConfirm(id) {
+  const list = await dbGetAll('materials');
+  const m = list.find(x => x.id === id);
+  if (!m) return;
+
+  const ok = confirm(`ลบวัตถุดิบ "${m.name}" ?`);
+  if (!ok) return;
+
+  try {
+    await dbDelete('materials', id);
+    renderMaterialsList();
+    showToast('ลบวัตถุดิบแล้ว');
+  } catch (e) {
+    console.error(e);
+    showToast('ลบไม่สำเร็จ');
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   เจ้าของ (Owners)
+   ── ใช้แยกสินค้าของแต่ละคนในหน้าขาย (ผูกกับสินค้าในบล็อคถัดไป)
+   ── โครงสร้าง: { id, name, color, icon, createdAt }
+   ══════════════════════════════════════════════════════════════ */
+
+let _pendingOwnerColor = COLOR_PALETTE[0];
+let _pendingOwnerIcon = ICON_OPTIONS[0];
+let _editingOwnerId = null;
+let _editingOwnerData = null;
+
+async function renderOwnersList() {
+  const container = document.getElementById('owners-list');
+  container.innerHTML = '<div class="sm-empty">กำลังโหลด...</div>';
+  try {
+    const list = await dbGetAll('owners');
+    if (list.length === 0) {
+      container.innerHTML = `<div class="sm-empty">ยังไม่มีเจ้าของ<br>กดปุ่ม + ด้านล่างเพื่อเพิ่มเจ้าของแรก</div>`;
+      return;
+    }
+    list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    container.innerHTML = list.map(o => `
+      <div class="item-card">
+        <div class="item-icon" style="background:${o.color}22;">${o.icon}</div>
+        <div class="item-main" onclick="openEditOwnerModal('${o.id}')">
+          <div class="item-name">${escapeHtml(o.name)}</div>
+        </div>
+        <button class="item-delete" onclick="deleteOwnerConfirm('${o.id}')">🗑</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = '<div class="sm-empty">โหลดข้อมูลไม่สำเร็จ</div>';
+  }
+}
+
+function renderOwnerColorRow() {
+  const row = document.getElementById('owner-color-swatch-row');
+  row.innerHTML = COLOR_PALETTE.map(c => `
+    <button class="swatch ${c === _pendingOwnerColor ? 'selected' : ''}" style="background:${c}"
+      data-color="${c}" onclick="pickOwnerColor('${c}', this)"></button>
+  `).join('');
+}
+
+function renderOwnerIconRow() {
+  const row = document.getElementById('owner-icon-choice-row');
+  row.innerHTML = ICON_OPTIONS.map(icon => `
+    <button class="icon-choice ${icon === _pendingOwnerIcon ? 'selected' : ''}"
+      data-icon="${icon}" onclick="pickOwnerIcon('${icon}', this)">${icon}</button>
+  `).join('');
+}
+
+function pickOwnerColor(color, btnEl) {
+  _pendingOwnerColor = color;
+  document.querySelectorAll('#owner-color-swatch-row .swatch').forEach(el => el.classList.remove('selected'));
+  btnEl.classList.add('selected');
+}
+
+function pickOwnerIcon(icon, btnEl) {
+  _pendingOwnerIcon = icon;
+  document.querySelectorAll('#owner-icon-choice-row .icon-choice').forEach(el => el.classList.remove('selected'));
+  btnEl.classList.add('selected');
+}
+
+function openCreateOwnerModal() {
+  _editingOwnerId = null;
+  _editingOwnerData = null;
+  _pendingOwnerColor = COLOR_PALETTE[0];
+  _pendingOwnerIcon = ICON_OPTIONS[0];
+
+  document.getElementById('owner-modal-title').textContent = 'เพิ่มเจ้าของ';
+  document.getElementById('input-owner-name').value = '';
+  renderOwnerColorRow();
+  renderOwnerIconRow();
+
+  openModal('modal-owner');
+}
+
+async function openEditOwnerModal(id) {
+  const list = await dbGetAll('owners');
+  const o = list.find(x => x.id === id);
+  if (!o) return;
+
+  _editingOwnerId = id;
+  _editingOwnerData = o;
+  _pendingOwnerColor = o.color;
+  _pendingOwnerIcon = o.icon;
+
+  document.getElementById('owner-modal-title').textContent = 'แก้ไขเจ้าของ';
+  document.getElementById('input-owner-name').value = o.name;
+  renderOwnerColorRow();
+  renderOwnerIconRow();
+
+  openModal('modal-owner');
+}
+
+async function submitOwner() {
+  const nameInput = document.getElementById('input-owner-name');
+  const name = nameInput.value.trim();
+
+  if (!name) {
+    showToast('กรุณากรอกชื่อเจ้าของ');
+    nameInput.focus();
+    return;
+  }
+
+  const record = {
+    id: _editingOwnerId || uid(),
+    name,
+    color: _pendingOwnerColor,
+    icon: _pendingOwnerIcon,
+    createdAt: _editingOwnerData ? _editingOwnerData.createdAt : Date.now()
+  };
+
+  try {
+    await dbPut('owners', record);
+    closeModal('modal-owner');
+    renderOwnersList();
+    showToast(_editingOwnerId ? 'แก้ไขเจ้าของแล้ว' : 'เพิ่มเจ้าของแล้ว');
+
+    // ถ้าเปิดโมดัลนี้มาจากฟอร์มสินค้า (กด "+ เพิ่มเจ้าของ") ให้รีเฟรชชิปเจ้าของ
+    // ในฟอร์มสินค้าที่ยังเปิดค้างอยู่ด้านหลัง แล้วเลือกเจ้าของที่เพิ่งสร้าง/แก้ไขให้เลย
+    if (_productOwnerModalReturnFlag) {
+      _productOwnerModalReturnFlag = false;
+      _productModalOwners = await dbGetAll('owners');
+      _pendingProductOwnerId = record.id;
+      renderProductOwnerChips();
+    }
+  } catch (e) {
+    console.error(e);
+    showToast('บันทึกไม่สำเร็จ');
+  }
+}
+
+async function deleteOwnerConfirm(id) {
+  const list = await dbGetAll('owners');
+  const o = list.find(x => x.id === id);
+  if (!o) return;
+
+  const ok = confirm(`ลบเจ้าของ "${o.name}" ?`);
+  if (!ok) return;
+
+  try {
+    await dbDelete('owners', id);
+    renderOwnersList();
+    showToast('ลบเจ้าของแล้ว');
+  } catch (e) {
+    console.error(e);
+    showToast('ลบไม่สำเร็จ');
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   สินค้า (Products)
+   ── ต้นทุนคำนวณได้ 2 ทาง: จากสูตรวัตถุดิบ (ถ้ามีรายการ) หรือกรอกเอง
+      (ถ้ามีรายการสูตร ต้นทุนจะคำนวณจากสูตรเสมอ ไม่ใช่บวกกับที่กรอกเอง)
+   ── เจ้าของสินค้าบังคับเลือก มีปุ่ม "+ เพิ่มเจ้าของ" ในฟอร์มเสมอ
+   ── สต็อกเลือกได้ต่อสินค้า (เปิด/ปิด)
+   ── โครงสร้าง:
+      { id, name, icon, ownerId, recipeLines:[{materialId,qty}],
+        manualCost, cost, price, profit, stockEnabled, stock, createdAt }
+   ══════════════════════════════════════════════════════════════ */
+
+let _editingProductId = null;
+let _editingProductData = null;
+let _pendingProductIcon = ICON_OPTIONS[0];
+let _pendingProductOwnerId = null;
+let _productRecipeLines = [];     // [{ _lineUid, materialId, qty }]
+let _productModalMaterials = [];  // cache วัตถุดิบทั้งหมด ตอนเปิดฟอร์มสินค้า
+let _productModalOwners = [];     // cache เจ้าของทั้งหมด ตอนเปิดฟอร์มสินค้า
+
+// flag ไว้บอกว่า modal-material / modal-owner ถูกเปิดมาจากฟอร์มสินค้า
+// (เพื่อรีเฟรช cache + auto-select กลับเข้าฟอร์มสินค้าหลังบันทึก)
+let _productMaterialModalReturnFlag = false;
+let _productOwnerModalReturnFlag = false;
+
+function goToProductsPage() {
+  if (!getActiveRoomCode()) {
+    showToast('กรุณาเลือก/สร้างร้านก่อน');
+    return;
+  }
+  closeSettingsPanel();
+  openSubPage('page-products');
+  renderProductsList();
+}
+
+async function renderProductsList() {
+  const container = document.getElementById('products-list');
+  container.innerHTML = '<div class="sm-empty">กำลังโหลด...</div>';
+  try {
+    const [products, owners] = await Promise.all([dbGetAll('products'), dbGetAll('owners')]);
+    if (products.length === 0) {
+      container.innerHTML = `<div class="sm-empty">ยังไม่มีสินค้า<br>กดปุ่ม + ด้านล่างเพื่อเพิ่มสินค้าแรก</div>`;
+      return;
+    }
+    products.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    container.innerHTML = products.map(p => {
+      const owner = owners.find(o => o.id === p.ownerId);
+      const profitClass = p.profit >= 0 ? 'positive' : 'negative';
+      const stockText = p.stockEnabled ? `คงเหลือ ${fmt(p.stock)}` : 'ไม่จำกัดสต็อก';
+      return `
+        <div class="item-card">
+          <div class="item-icon" style="background:var(--surface2);">${p.icon}</div>
+          <div class="item-main" onclick="openEditProductModal('${p.id}')">
+            <div class="item-name">${escapeHtml(p.name)}</div>
+            ${owner ? `<div class="item-owner-tag">${owner.icon} ${escapeHtml(owner.name)}</div>` : ''}
+            <div class="item-price-row">
+              <span class="price">ขาย ${fmt(p.price)} บ.</span>
+              <span class="profit ${profitClass}">กำไร ${fmt(p.profit)} บ.</span>
+            </div>
+            <span class="stock-badge">${stockText}</span>
+          </div>
+          <button class="item-delete" onclick="deleteProductConfirm('${p.id}')">🗑</button>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = '<div class="sm-empty">โหลดข้อมูลไม่สำเร็จ</div>';
+  }
+}
+
+async function loadProductModalRefData() {
+  _productModalMaterials = await dbGetAll('materials');
+  _productModalOwners = await dbGetAll('owners');
+}
+
+async function openCreateProductModal() {
+  _editingProductId = null;
+  _editingProductData = null;
+  _pendingProductIcon = ICON_OPTIONS[0];
+  _pendingProductOwnerId = null;
+  _productRecipeLines = [];
+
+  document.getElementById('product-modal-title').textContent = 'เพิ่มสินค้า';
+  document.getElementById('input-product-name').value = '';
+  document.getElementById('input-product-price').value = '';
+  document.getElementById('input-product-manual-cost').value = '';
+  document.getElementById('input-product-stock-enabled').checked = false;
+  document.getElementById('input-product-stock-qty').value = '';
+  toggleProductStockQtyVisibility();
+
+  await loadProductModalRefData();
+  renderProductIconRow();
+  renderProductOwnerChips();
+  renderProductRecipeLines();
+
+  openModal('modal-product');
+}
+
+async function openEditProductModal(id) {
+  const list = await dbGetAll('products');
+  const p = list.find(x => x.id === id);
+  if (!p) return;
+
+  _editingProductId = id;
+  _editingProductData = p;
+  _pendingProductIcon = p.icon;
+  _pendingProductOwnerId = p.ownerId;
+  _productRecipeLines = (p.recipeLines || []).map(l => ({
+    _lineUid: uid(), materialId: l.materialId, qty: l.qty
+  }));
+
+  document.getElementById('product-modal-title').textContent = 'แก้ไขสินค้า';
+  document.getElementById('input-product-name').value = p.name;
+  document.getElementById('input-product-price').value = p.price;
+  document.getElementById('input-product-manual-cost').value = p.manualCost != null ? p.manualCost : '';
+  document.getElementById('input-product-stock-enabled').checked = !!p.stockEnabled;
+  document.getElementById('input-product-stock-qty').value = p.stockEnabled ? p.stock : '';
+  toggleProductStockQtyVisibility();
+
+  await loadProductModalRefData();
+  renderProductIconRow();
+  renderProductOwnerChips();
+  renderProductRecipeLines();
+
+  openModal('modal-product');
+}
+
+function toggleProductStockQtyVisibility() {
+  const enabled = document.getElementById('input-product-stock-enabled').checked;
+  document.getElementById('product-stock-qty-group').style.display = enabled ? 'block' : 'none';
+}
+
+/* ── ไอคอนสินค้า ── */
+function renderProductIconRow() {
+  const row = document.getElementById('product-icon-choice-row');
+  row.innerHTML = ICON_OPTIONS.map(icon => `
+    <button class="icon-choice ${icon === _pendingProductIcon ? 'selected' : ''}"
+      data-icon="${icon}" onclick="pickProductIcon('${icon}', this)">${icon}</button>
+  `).join('');
+}
+function pickProductIcon(icon, btnEl) {
+  _pendingProductIcon = icon;
+  document.querySelectorAll('#product-icon-choice-row .icon-choice').forEach(el => el.classList.remove('selected'));
+  btnEl.classList.add('selected');
+}
+
+/* ── เจ้าของสินค้า (chip, บังคับเลือก, มีปุ่มเพิ่มเจ้าของเสมอ) ── */
+function renderProductOwnerChips() {
+  const row = document.getElementById('product-owner-chip-row');
+  const chips = _productModalOwners.map(o => `
+    <button type="button" class="chip ${o.id === _pendingProductOwnerId ? 'selected' : ''}"
+      onclick="pickProductOwner('${o.id}')">${o.icon} ${escapeHtml(o.name)}</button>
+  `).join('');
+  row.innerHTML = chips + `<button type="button" class="chip add" onclick="openOwnerModalFromProduct()">+ เพิ่มเจ้าของ</button>`;
+}
+function pickProductOwner(ownerId) {
+  _pendingProductOwnerId = ownerId;
+  renderProductOwnerChips();
+}
+function openOwnerModalFromProduct() {
+  _productOwnerModalReturnFlag = true;
+  openCreateOwnerModal();
+}
+
+/* ── วัตถุดิบเพิ่มใหม่จากฟอร์มสินค้า ── */
+function openMaterialModalFromProduct() {
+  _productMaterialModalReturnFlag = true;
+  openCreateMaterialModal();
+}
+
+/* ── สูตรวัตถุดิบ (recipe lines) ── */
+function getRecipeLineSubtotal(line) {
+  const m = _productModalMaterials.find(x => x.id === line.materialId);
+  if (!m || !line.qty) return 0;
+  return m.unitCost * parseFloat(line.qty);
+}
+
+function getProductTotalCost() {
+  if (_productRecipeLines.length > 0) {
+    return _productRecipeLines.reduce((sum, l) => sum + getRecipeLineSubtotal(l), 0);
+  }
+  return parseFloat(document.getElementById('input-product-manual-cost').value) || 0;
+}
+
+function renderProductRecipeLines() {
+  const container = document.getElementById('product-recipe-lines');
+
+  if (_productRecipeLines.length === 0) {
+    container.innerHTML = `<div class="sm-empty" style="margin:4px 0 8px; font-size:12.5px;">ยังไม่มีวัตถุดิบในสูตร</div>`;
+  } else if (_productModalMaterials.length === 0) {
+    container.innerHTML = `<div class="sm-empty" style="margin:4px 0 8px; font-size:12.5px;">ยังไม่มีวัตถุดิบให้เลือก กด "+ เพิ่มวัตถุดิบใหม่"</div>`;
+  } else {
+    container.innerHTML = _productRecipeLines.map(line => `
+      <div class="recipe-line" data-line-uid="${line._lineUid}">
+        <select onchange="updateRecipeLineMaterial('${line._lineUid}', this.value)">
+          ${_productModalMaterials.map(m => `
+            <option value="${m.id}" ${m.id === line.materialId ? 'selected' : ''}>${escapeHtml(m.name)}</option>
+          `).join('')}
+        </select>
+        <input type="number" inputmode="decimal" placeholder="จำนวน" value="${line.qty || ''}"
+          oninput="updateRecipeLineQty('${line._lineUid}', this.value)">
+        <div class="recipe-subtotal">${fmt(getRecipeLineSubtotal(line))} บ.</div>
+        <button type="button" class="recipe-remove" onclick="removeRecipeLine('${line._lineUid}')">✕</button>
+      </div>
+    `).join('');
+  }
+
+  updateProductCostAndProfitPreview();
+}
+
+function addRecipeLine() {
+  if (_productModalMaterials.length === 0) {
+    showToast('ยังไม่มีวัตถุดิบ กด "+ เพิ่มวัตถุดิบใหม่" ก่อน');
+    return;
+  }
+  _productRecipeLines.push({ _lineUid: uid(), materialId: _productModalMaterials[0].id, qty: '' });
+  renderProductRecipeLines();
+}
+
+function updateRecipeLineMaterial(lineUid, materialId) {
+  const line = _productRecipeLines.find(l => l._lineUid === lineUid);
+  if (line) line.materialId = materialId;
+  renderProductRecipeLines();
+}
+
+function updateRecipeLineQty(lineUid, qtyValue) {
+  const line = _productRecipeLines.find(l => l._lineUid === lineUid);
+  if (!line) return;
+  line.qty = qtyValue;
+
+  // อัปเดตแค่ subtotal ของบรรทัดนี้ ไม่ re-render ทั้งลิสต์ (กันโฟกัสหลุดตอนพิมพ์)
+  const subtotalEl = document.querySelector(`.recipe-line[data-line-uid="${lineUid}"] .recipe-subtotal`);
+  if (subtotalEl) subtotalEl.textContent = fmt(getRecipeLineSubtotal(line)) + ' บ.';
+
+  updateProductCostAndProfitPreview();
+}
+
+function removeRecipeLine(lineUid) {
+  _productRecipeLines = _productRecipeLines.filter(l => l._lineUid !== lineUid);
+  renderProductRecipeLines();
+}
+
+/* ── ต้นทุน/กำไร preview (คำนวณสด) ── */
+function updateProductCostAndProfitPreview() {
+  const hasRecipe = _productRecipeLines.length > 0;
+  const manualCostInput = document.getElementById('input-product-manual-cost');
+  const hint = document.getElementById('product-cost-mode-hint');
+
+  manualCostInput.readOnly = hasRecipe;
+  manualCostInput.style.opacity = hasRecipe ? '0.6' : '1';
+
+  const cost = getProductTotalCost();
+
+  if (hasRecipe) {
+    manualCostInput.value = cost ? cost.toFixed(2) : '0';
+    hint.textContent = '(คำนวณจากสูตรวัตถุดิบอัตโนมัติ)';
+  } else {
+    hint.textContent = '(กรอกเอง)';
+  }
+
+  const price = parseFloat(document.getElementById('input-product-price').value) || 0;
+  const profit = price - cost;
+  const preview = document.getElementById('product-profit-preview');
+  preview.textContent = `กำไร: ${fmt(profit)} บาท / ชิ้น`;
+  preview.className = 'profit-preview ' + (profit >= 0 ? 'positive' : 'negative');
+}
+
+async function submitProduct() {
+  const nameInput = document.getElementById('input-product-name');
+  const name = nameInput.value.trim();
+  const price = parseFloat(document.getElementById('input-product-price').value);
+  const stockEnabled = document.getElementById('input-product-stock-enabled').checked;
+  const stockQtyRaw = document.getElementById('input-product-stock-qty').value;
+
+  if (!name) {
+    showToast('กรุณากรอกชื่อสินค้า');
+    nameInput.focus();
+    return;
+  }
+  if (!_pendingProductOwnerId) {
+    showToast('กรุณาเลือกเจ้าของสินค้า');
+    return;
+  }
+  if (!price || price <= 0) {
+    showToast('กรุณากรอกราคาขายให้ถูกต้อง');
+    return;
+  }
+  if (stockEnabled && (stockQtyRaw === '' || parseFloat(stockQtyRaw) < 0)) {
+    showToast('กรุณากรอกจำนวนสต็อกให้ถูกต้อง');
+    return;
+  }
+
+  const cost = getProductTotalCost();
+  const recipeLines = _productRecipeLines
+    .filter(l => l.materialId && l.qty)
+    .map(l => ({ materialId: l.materialId, qty: parseFloat(l.qty) }));
+
+  const record = {
+    id: _editingProductId || uid(),
+    name,
+    icon: _pendingProductIcon,
+    ownerId: _pendingProductOwnerId,
+    recipeLines,
+    manualCost: recipeLines.length > 0 ? null : cost,
+    cost,
+    price,
+    profit: price - cost,
+    stockEnabled,
+    stock: stockEnabled ? parseFloat(stockQtyRaw) : null,
+    createdAt: _editingProductData ? _editingProductData.createdAt : Date.now()
+  };
+
+  try {
+    await dbPut('products', record);
+    closeModal('modal-product');
+    renderProductsList();
+    showToast(_editingProductId ? 'แก้ไขสินค้าแล้ว' : 'เพิ่มสินค้าแล้ว');
+  } catch (e) {
+    console.error(e);
+    showToast('บันทึกไม่สำเร็จ');
+  }
+}
+
+async function deleteProductConfirm(id) {
+  const list = await dbGetAll('products');
+  const p = list.find(x => x.id === id);
+  if (!p) return;
+
+  const ok = confirm(`ลบสินค้า "${p.name}" ?`);
+  if (!ok) return;
+
+  try {
+    await dbDelete('products', id);
+    renderProductsList();
+    showToast('ลบสินค้าแล้ว');
+  } catch (e) {
+    console.error(e);
+    showToast('ลบไม่สำเร็จ');
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   หน้าขาย (POS) หลัก
+   ── ตะกร้าเป็น state ชั่วคราวในหน้าเว็บ (ไม่ persist) เพราะยังไม่มีบล็อคจ่ายเงิน/บันทึกการขายจริง
+   ── ตัดสต็อกจริงจะเกิดตอนกดชำระสำเร็จ (บล็อค 8-9) เท่านั้น ที่นี่แค่ "จอง" ผ่านการเทียบ qty ในตะกร้ากับ stock
+   ══════════════════════════════════════════════════════════════ */
+
+let _posProducts = [];   // cache สินค้าทั้งหมดของร้าน active (โหลดใหม่ทุกครั้งที่เข้า/รีเฟรชหน้าขาย)
+let _cart = {};          // { productId: qty }
+
+async function goToPOSPage() {
+  if (!getActiveRoomCode()) {
+    switchPage('page-store-management');
+    renderStoreList();
+    return;
+  }
+  switchPage('page-pos');
+  renderTopNav();
+  showSettingsFab();
+  await loadPOSProducts();
+  renderPOSGrid();
+  renderCartBar();
+}
+
+async function loadPOSProducts() {
+  try {
+    _posProducts = await dbGetAll('products');
+    _posProducts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  } catch (e) {
+    console.error(e);
+    _posProducts = [];
+    showToast('โหลดสินค้าไม่สำเร็จ');
+  }
+}
+
+function cartQtyOf(productId) {
+  return _cart[productId] || 0;
+}
+
+function getCartTotal() {
+  return Object.entries(_cart).reduce((sum, [pid, qty]) => {
+    const p = _posProducts.find(x => x.id === pid);
+    return sum + (p ? p.price * qty : 0);
+  }, 0);
+}
+
+function renderPOSGrid() {
+  const container = document.getElementById('pos-product-grid');
+  if (!container) return;
+
+  if (_posProducts.length === 0) {
+    container.innerHTML = `
+      <div class="sm-empty" style="grid-column:1/-1;">
+        ยังไม่มีสินค้า<br>ไปที่เมนูตั้งค่า ⚙️ ด้านล่าง > จัดการร้าน > สินค้า เพื่อเพิ่มสินค้าก่อน
+        <div style="margin-top:14px; display:flex; justify-content:center;">
+          <button class="btn btn-primary" style="flex:none; padding:11px 22px;" onclick="goToProductsPage()">+ เพิ่มสินค้า</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = _posProducts.map(p => {
+    const inCart = cartQtyOf(p.id);
+    const outOfStock = p.stockEnabled && p.stock <= 0;
+    const atMax = p.stockEnabled && inCart >= p.stock;
+    const disabled = outOfStock || atMax;
+    return `
+      <button class="pos-card ${disabled ? 'disabled' : ''}" onclick="addToCart('${p.id}')">
+        ${inCart > 0 ? `<div class="pos-card-qty-badge">${inCart}</div>` : ''}
+        <div class="pos-card-icon">${p.icon}</div>
+        <div class="pos-card-name">${escapeHtml(p.name)}</div>
+        <div class="pos-card-price">${fmt(p.price)} บ.</div>
+        ${p.stockEnabled ? `<div class="pos-card-stock">เหลือ ${fmt(p.stock)}</div>` : ''}
+      </button>
+    `;
+  }).join('');
+}
+
+/** กดการ์ดสินค้า (หรือปุ่ม + ในตะกร้า) — เพิ่มจำนวนสะสมทันที กันเกินสต็อก */
+function addToCart(productId) {
+  const p = _posProducts.find(x => x.id === productId);
+  if (!p) return;
+
+  const current = cartQtyOf(productId);
+  if (p.stockEnabled && current >= p.stock) {
+    showToast('สินค้าเหลือไม่พอ');
+    return;
+  }
+
+  _cart[productId] = current + 1;
+  renderPOSGrid();
+  renderCartBar();
+  if (document.getElementById('modal-cart').classList.contains('open')) {
+    renderCartSheet();
+  }
+}
+
+function renderCartBar() {
+  const bar = document.getElementById('cart-bar');
+  if (!bar) return;
+  const totalQty = Object.values(_cart).reduce((s, q) => s + q, 0);
+
+  if (totalQty === 0) {
+    bar.classList.remove('show');
+    return;
+  }
+  bar.classList.add('show');
+  document.getElementById('cart-bar-count').textContent = totalQty;
+  document.getElementById('cart-bar-total').textContent = fmt(getCartTotal()) + ' บ.';
+}
+
+function openCartSheet() {
+  renderCartSheet();
+  openModal('modal-cart');
+}
+
+function renderCartSheet() {
+  const container = document.getElementById('cart-lines-container');
+  const entries = Object.entries(_cart).filter(([, qty]) => qty > 0);
+
+  if (entries.length === 0) {
+    container.innerHTML = `<div class="sm-empty" style="margin:12px 0;">ตะกร้าว่างเปล่า</div>`;
+  } else {
+    container.innerHTML = entries.map(([pid, qty]) => {
+      const p = _posProducts.find(x => x.id === pid);
+      if (!p) return '';
+      const subtotal = p.price * qty;
+      return `
+        <div class="cart-line">
+          <div class="cl-icon">${p.icon}</div>
+          <div class="cl-main">
+            <div class="cl-name">${escapeHtml(p.name)}</div>
+            <div class="cl-unit-price">${fmt(p.price)} บ. / ชิ้น</div>
+          </div>
+          <div class="cl-stepper">
+            <button onclick="decrementCartLine('${pid}')">−</button>
+            <div class="cl-qty">${qty}</div>
+            <button onclick="addToCart('${pid}')">+</button>
+          </div>
+          <div class="cl-subtotal">${fmt(subtotal)} บ.</div>
+          <button class="cl-remove" onclick="removeCartLine('${pid}')">🗑</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  document.getElementById('cart-total-amount').textContent = fmt(getCartTotal()) + ' บ.';
+
+  const chargeBtn = document.getElementById('cart-charge-btn');
+  chargeBtn.disabled = entries.length === 0;
+}
+
+function decrementCartLine(productId) {
+  const current = cartQtyOf(productId);
+  if (current <= 1) {
+    removeCartLine(productId);
+    return;
+  }
+  _cart[productId] = current - 1;
+  renderPOSGrid();
+  renderCartBar();
+  renderCartSheet();
+}
+
+function removeCartLine(productId) {
+  delete _cart[productId];
+  renderPOSGrid();
+  renderCartBar();
+  renderCartSheet();
+}
+
+function clearCartConfirm() {
+  if (Object.keys(_cart).length === 0) return;
+  const ok = confirm('ล้างตะกร้าทั้งหมด?');
+  if (!ok) return;
+  _cart = {};
+  renderPOSGrid();
+  renderCartBar();
+  renderCartSheet();
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   QR CODE ENCODER (ออฟไลน์ล้วน — เขียนเอง, ทดสอบ round-trip กับ decoder จริงแล้ว)
+   รองรับ version 1-5, EC level L (พอสำหรับ payload PromptPay ~50-90 ตัวอักษร)
+   ══════════════════════════════════════════════════════════════ */
+
+/* Minimal offline QR Code encoder — versions 1-5, EC level L only (single RS block, no interleaving needed).
+   Enough capacity (up to 108 data codewords ≈ 154 alphanumeric chars) for PromptPay EMV payloads. */
+
+const QR_VERSIONS = [
+  { version: 1, size: 21, total: 26, data: 19, ecc: 7,  align: [] },
+  { version: 2, size: 25, total: 44, data: 34, ecc: 10, align: [6, 18] },
+  { version: 3, size: 29, total: 70, data: 55, ecc: 15, align: [6, 22] },
+  { version: 4, size: 33, total: 100, data: 80, ecc: 20, align: [6, 26] },
+  { version: 5, size: 37, total: 134, data: 108, ecc: 26, align: [6, 30] },
+];
+
+const ALPHANUM_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
+
+function isAlphanumeric(str) {
+  for (const ch of str) if (ALPHANUM_CHARS.indexOf(ch) === -1) return false;
+  return true;
+}
+
+/* ── GF(256) tables (primitive poly 0x11D) ── */
+const GF_EXP = new Array(512);
+const GF_LOG = new Array(256);
+(function initGF() {
+  let x = 1;
+  for (let i = 0; i < 255; i++) {
+    GF_EXP[i] = x;
+    GF_LOG[x] = i;
+    x <<= 1;
+    if (x & 0x100) x ^= 0x11D;
+  }
+  for (let i = 255; i < 512; i++) GF_EXP[i] = GF_EXP[i - 255];
+})();
+function gfMul(a, b) {
+  if (a === 0 || b === 0) return 0;
+  return GF_EXP[GF_LOG[a] + GF_LOG[b]];
+}
+
+function rsEncode(dataCodewords, eccLen) {
+  // generator poly built via convolution (x - a^0)(x - a^1)...(x - a^(eccLen-1))
+  let gen = [1];
+  for (let i = 0; i < eccLen; i++) {
+    const mult = [1, GF_EXP[i]];
+    const res = new Array(gen.length + 1).fill(0);
+    for (let a = 0; a < gen.length; a++) {
+      for (let b = 0; b < mult.length; b++) {
+        res[a + b] ^= gfMul(gen[a], mult[b]);
+      }
+    }
+    gen = res;
+  }
+  // gen is highest-degree-first already given construction order (leading term first)
+  const msg = dataCodewords.slice();
+  const remainder = msg.slice();
+  for (let i = 0; i < dataCodewords.length; i++) {
+    const coef = remainder[i];
+    if (coef !== 0) {
+      for (let j = 0; j < gen.length; j++) {
+        remainder[i + j] ^= gfMul(gen[j], coef);
+      }
+    }
+  }
+  return remainder.slice(dataCodewords.length, dataCodewords.length + eccLen);
+}
+
+/* ── bit buffer ── */
+function BitBuffer() {
+  return { bits: [], put(val, len) { for (let i = len - 1; i >= 0; i--) this.bits.push((val >>> i) & 1); } };
+}
+
+function toUtf8Bytes(str) {
+  if (typeof TextEncoder !== 'undefined') return Array.from(new TextEncoder().encode(str));
+  // fallback UTF-8 encoder (only needed in environments without TextEncoder)
+  const bytes = [];
+  for (let i = 0; i < str.length; i++) {
+    let code = str.codePointAt(i);
+    if (code > 0xFFFF) i++; // surrogate pair consumed
+    if (code < 0x80) bytes.push(code);
+    else if (code < 0x800) bytes.push(0xC0 | (code >> 6), 0x80 | (code & 0x3F));
+    else if (code < 0x10000) bytes.push(0xE0 | (code >> 12), 0x80 | ((code >> 6) & 0x3F), 0x80 | (code & 0x3F));
+    else bytes.push(0xF0 | (code >> 18), 0x80 | ((code >> 12) & 0x3F), 0x80 | ((code >> 6) & 0x3F), 0x80 | (code & 0x3F));
+  }
+  return bytes;
+}
+
+function chooseVersion(dataStr, mode, byteLen) {
+  for (const v of QR_VERSIONS) {
+    let bitsNeeded;
+    if (mode === 'alnum') {
+      const n = dataStr.length;
+      bitsNeeded = 4 + 9 + Math.floor(n / 2) * 11 + (n % 2 === 1 ? 6 : 0);
+    } else {
+      bitsNeeded = 4 + 8 + byteLen * 8;
+    }
+    if (bitsNeeded <= v.data * 8) return v;
+  }
+  return null; // too big for our supported range
+}
+
+function encodeQR(text) {
+  const mode = isAlphanumeric(text) ? 'alnum' : 'byte';
+  const bytes = mode === 'byte' ? toUtf8Bytes(text) : null;
+  const v = chooseVersion(text, mode, bytes ? bytes.length : 0);
+  if (!v) throw new Error('ข้อมูลยาวเกินไปสำหรับ QR (เกินขอบเขตที่รองรับ)');
+
+  const bb = BitBuffer();
+  if (mode === 'alnum') {
+    bb.put(0b0010, 4); // mode indicator: alphanumeric
+    bb.put(text.length, 9);
+    for (let i = 0; i < text.length; i += 2) {
+      if (i + 1 < text.length) {
+        const val = ALPHANUM_CHARS.indexOf(text[i]) * 45 + ALPHANUM_CHARS.indexOf(text[i + 1]);
+        bb.put(val, 11);
+      } else {
+        bb.put(ALPHANUM_CHARS.indexOf(text[i]), 6);
+      }
+    }
+  } else {
+    bb.put(0b0100, 4); // byte mode
+    bb.put(bytes.length, 8);
+    for (const byte of bytes) bb.put(byte, 8);
+  }
+
+  const capacityBits = v.data * 8;
+  // terminator (up to 4 bits)
+  const termLen = Math.min(4, capacityBits - bb.bits.length);
+  if (termLen > 0) bb.put(0, termLen);
+  // pad to byte boundary
+  while (bb.bits.length % 8 !== 0) bb.bits.push(0);
+  // pad bytes 0xEC / 0x11 alternating
+  const padBytes = [0xEC, 0x11];
+  let p = 0;
+  while (bb.bits.length < capacityBits) {
+    bb.put(padBytes[p % 2], 8);
+    p++;
+  }
+
+  const dataCodewords = [];
+  for (let i = 0; i < bb.bits.length; i += 8) {
+    let byte = 0;
+    for (let j = 0; j < 8; j++) byte = (byte << 1) | bb.bits[i + j];
+    dataCodewords.push(byte);
+  }
+
+  const eccCodewords = rsEncode(dataCodewords, v.ecc);
+  const allCodewords = dataCodewords.concat(eccCodewords);
+
+  return buildMatrix(v, allCodewords);
+}
+
+function buildMatrix(v, codewords) {
+  const size = v.size;
+  const matrix = Array.from({ length: size }, () => new Array(size).fill(null));
+  const reserved = Array.from({ length: size }, () => new Array(size).fill(false));
+
+  function setModule(r, c, val, isReserved) {
+    if (r < 0 || r >= size || c < 0 || c >= size) return;
+    matrix[r][c] = val;
+    if (isReserved) reserved[r][c] = true;
+  }
+
+  function placeFinder(r, c) {
+    for (let dr = -1; dr <= 7; dr++) {
+      for (let dc = -1; dc <= 7; dc++) {
+        const rr = r + dr, cc = c + dc;
+        if (rr < 0 || rr >= size || cc < 0 || cc >= size) continue;
+        const isBorder = dr === -1 || dr === 7 || dc === -1 || dc === 7;
+        const inRing = dr >= 0 && dr <= 6 && dc >= 0 && dc <= 6 && (dr === 0 || dr === 6 || dc === 0 || dc === 6);
+        const inCore = dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4;
+        let val = 0;
+        if (isBorder) val = 0; // separator (white), still reserved
+        else if (inRing || inCore) val = 1;
+        setModule(rr, cc, val, true);
+      }
+    }
+  }
+  placeFinder(0, 0);
+  placeFinder(0, size - 7);
+  placeFinder(size - 7, 0);
+
+  // timing patterns
+  for (let i = 8; i < size - 8; i++) {
+    setModule(6, i, i % 2 === 0 ? 1 : 0, true);
+    setModule(i, 6, i % 2 === 0 ? 1 : 0, true);
+  }
+
+  // alignment pattern (versions 2-5 have exactly one, away from finder corners)
+  if (v.align.length === 2) {
+    const positions = [];
+    for (const r of v.align) for (const c of v.align) positions.push([r, c]);
+    for (const [r, c] of positions) {
+      // skip if overlapping a finder pattern corner area
+      const nearTL = r <= 8 && c <= 8;
+      const nearTR = r <= 8 && c >= size - 9;
+      const nearBL = r >= size - 9 && c <= 8;
+      if (nearTL || nearTR || nearBL) continue;
+      for (let dr = -2; dr <= 2; dr++) {
+        for (let dc = -2; dc <= 2; dc++) {
+          const isRing = dr === -2 || dr === 2 || dc === -2 || dc === 2;
+          setModule(r + dr, c + dc, (isRing || (dr === 0 && dc === 0)) ? 1 : 0, true);
+        }
+      }
+    }
+  }
+
+  // dark module (always present)
+  setModule(4 * v.version + 9, 8, 1, true);
+
+  // reserve format info areas (filled in later after mask chosen)
+  for (let i = 0; i < 9; i++) {
+    if (matrix[8][i] === null) reserved[8][i] = true;
+    if (matrix[i][8] === null) reserved[i][8] = true;
+  }
+  for (let i = 0; i < 8; i++) {
+    reserved[8][size - 1 - i] = true;
+    reserved[size - 1 - i][8] = true;
+  }
+  reserved[size - 8][8] = true;
+
+  // ── data placement (zigzag, skipping reserved cells) ──
+  const bits = [];
+  for (const byte of codewords) for (let b = 7; b >= 0; b--) bits.push((byte >> b) & 1);
+  let bitIdx = 0;
+  let dir = -1; // upward
+  let col = size - 1;
+  while (col > 0) {
+    if (col === 6) col--; // skip timing column
+    for (let i = 0; i < size; i++) {
+      const row = dir === -1 ? size - 1 - i : i;
+      for (const c of [col, col - 1]) {
+        if (reserved[row][c]) continue;
+        const bit = bitIdx < bits.length ? bits[bitIdx] : 0;
+        bitIdx++;
+        matrix[row][c] = bit;
+      }
+    }
+    dir = -dir;
+    col -= 2;
+  }
+
+  // ── try all 8 masks, pick lowest penalty ──
+  function maskFn(pattern, r, c) {
+    switch (pattern) {
+      case 0: return (r + c) % 2 === 0;
+      case 1: return r % 2 === 0;
+      case 2: return c % 3 === 0;
+      case 3: return (r + c) % 3 === 0;
+      case 4: return (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0;
+      case 5: return (r * c) % 2 + (r * c) % 3 === 0;
+      case 6: return ((r * c) % 2 + (r * c) % 3) % 2 === 0;
+      case 7: return ((r + c) % 2 + (r * c) % 3) % 2 === 0;
+    }
+  }
+
+  function applyMask(pattern) {
+    const m = matrix.map(row => row.slice());
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (reserved[r][c]) continue;
+        if (maskFn(pattern, r, c)) m[r][c] ^= 1;
+      }
+    }
+    return m;
+  }
+
+  function penalty(m) {
+    let total = 0;
+    // rule 1: runs of 5+ same color in row/col
+    for (let r = 0; r < size; r++) {
+      let run = 1;
+      for (let c = 1; c < size; c++) {
+        if (m[r][c] === m[r][c - 1]) run++;
+        else { if (run >= 5) total += 3 + (run - 5); run = 1; }
+      }
+      if (run >= 5) total += 3 + (run - 5);
+    }
+    for (let c = 0; c < size; c++) {
+      let run = 1;
+      for (let r = 1; r < size; r++) {
+        if (m[r][c] === m[r - 1][c]) run++;
+        else { if (run >= 5) total += 3 + (run - 5); run = 1; }
+      }
+      if (run >= 5) total += 3 + (run - 5);
+    }
+    // rule 2: 2x2 blocks same color
+    for (let r = 0; r < size - 1; r++) {
+      for (let c = 0; c < size - 1; c++) {
+        const v0 = m[r][c];
+        if (v0 === m[r][c + 1] && v0 === m[r + 1][c] && v0 === m[r + 1][c + 1]) total += 3;
+      }
+    }
+    // rule 3: finder-like patterns 1:1:3:1:1
+    const pat1 = [1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0];
+    const pat2 = [0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1];
+    function matchesAt(arr, start, pat) {
+      for (let k = 0; k < pat.length; k++) if (arr[start + k] !== pat[k]) return false;
+      return true;
+    }
+    for (let r = 0; r < size; r++) {
+      const row = m[r];
+      for (let c = 0; c <= size - 11; c++) {
+        if (matchesAt(row, c, pat1) || matchesAt(row, c, pat2)) total += 40;
+      }
+    }
+    for (let c = 0; c < size; c++) {
+      const col = m.map(row => row[c]);
+      for (let r = 0; r <= size - 11; r++) {
+        if (matchesAt(col, r, pat1) || matchesAt(col, r, pat2)) total += 40;
+      }
+    }
+    // rule 4: dark module ratio
+    let dark = 0;
+    for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) dark += m[r][c];
+    const percent = (dark * 100) / (size * size);
+    const prevMultiple = Math.floor(percent / 5) * 5;
+    const nextMultiple = prevMultiple + 5;
+    total += Math.min(Math.abs(prevMultiple - 50) / 5, Math.abs(nextMultiple - 50) / 5) * 10;
+    return total;
+  }
+
+  let best = null, bestPenalty = Infinity, bestPattern = 0;
+  for (let p = 0; p < 8; p++) {
+    const m = applyMask(p);
+    const pen = penalty(m);
+    if (pen < bestPenalty) { bestPenalty = pen; best = m; bestPattern = p; }
+  }
+
+  // format info (EC level L = bits '01')
+  const FORMAT_EC_BITS = { L: 0b01, M: 0b00, Q: 0b11, H: 0b10 };
+  const formatData = (FORMAT_EC_BITS.L << 3) | bestPattern; // 5 bits
+  let formatBits = formatData << 10;
+  let gen = 0b10100110111;
+  let temp = formatBits;
+  for (let i = 14; i >= 10; i--) {
+    if ((temp >> i) & 1) temp ^= gen << (i - 10);
+  }
+  let formatCode = ((formatData << 10) | temp) ^ 0b101010000010010;
+  const fbits = [];
+  for (let i = 14; i >= 0; i--) fbits.push((formatCode >> i) & 1);
+
+  // place format bits (two copies)
+  const fPos1 = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+  for (let i = 0; i < 15; i++) best[fPos1[i][0]][fPos1[i][1]] = fbits[i];
+  for (let i = 0; i < 8; i++) best[8][size - 1 - i] = fbits[i];
+  for (let i = 8; i < 15; i++) best[size - 1 - (14 - i)][8] = fbits[i];
+
+  return best.map(row => row.map(v => (v === 1 ? 1 : 0)));
+}
+
+
+/**
+ * กดปุ่ม "เก็บเงิน" — เปิด modal เลือกวิธีจ่าย (เงินสด / QR)
+ */
+function chargeCart() {
+  if (Object.keys(_cart).length === 0) return;
+  openModal('modal-payment-method');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   หน้าคิดเงินทอน (เงินสด)
+   ══════════════════════════════════════════════════════════════ */
+
+function goToCashPage() {
+  if (Object.keys(_cart).length === 0) return;
+  document.getElementById('cash-total-amount').textContent = fmt(getCartTotal()) + ' บ.';
+  document.getElementById('cash-received-input').value = '';
+  renderCashQuickButtons();
+  renderCashChange();
+  switchPage('page-pay-cash');
+}
+
+function renderCashQuickButtons() {
+  const total = getCartTotal();
+  const container = document.getElementById('cash-quick-row');
+  const candidates = new Set();
+  candidates.add(Math.ceil(total / 20) * 20);
+  candidates.add(Math.ceil(total / 100) * 100);
+  [20, 50, 100, 500, 1000].forEach(bill => { if (bill >= total) candidates.add(bill); });
+  const rounded = Array.from(candidates).filter(v => v > total).sort((a, b) => a - b).slice(0, 3);
+  const finalList = [total, ...rounded].slice(0, 4);
+  container.innerHTML = finalList.map(v =>
+    `<button class="cash-quick-btn" onclick="setCashReceived(${v})">${v === total ? 'พอดี' : fmt(v)}</button>`
+  ).join('');
+}
+
+function setCashReceived(v) {
+  document.getElementById('cash-received-input').value = v;
+  renderCashChange();
+}
+
+function renderCashChange() {
+  const total = getCartTotal();
+  const receivedRaw = document.getElementById('cash-received-input').value;
+  const received = parseFloat(receivedRaw) || 0;
+  const change = received - total;
+  const box = document.getElementById('cash-change-box');
+  const amountEl = document.getElementById('cash-change-amount');
+
+  if (receivedRaw === '') {
+    amountEl.textContent = '0 บ.';
+    box.classList.remove('insufficient');
+  } else if (change < 0) {
+    amountEl.textContent = 'ขาดอีก ' + fmt(Math.abs(change)) + ' บ.';
+    box.classList.add('insufficient');
+  } else {
+    amountEl.textContent = fmt(change) + ' บ.';
+    box.classList.remove('insufficient');
+  }
+  document.getElementById('cash-confirm-btn').disabled = receivedRaw === '' || change < 0;
+}
+
+function confirmCashPayment() {
+  const total = getCartTotal();
+  const received = parseFloat(document.getElementById('cash-received-input').value) || 0;
+  if (received < total) return;
+  finalizeSale('cash', { cashReceived: received, changeGiven: received - total });
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   หน้าจ่าย QR (PromptPay) — offline EMV QR generation
+   ══════════════════════════════════════════════════════════════ */
+
+function crc16ccitt(str) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < str.length; i++) {
+    crc ^= (str.charCodeAt(i) << 8);
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+
+function tlv(tag, value) {
+  return tag + value.length.toString().padStart(2, '0') + value;
+}
+
+/** สร้าง payload ตามมาตรฐาน EMV QR ของไทย (PromptPay) รองรับเบอร์โทร 10 หลัก หรือเลขบัตร/ภาษี 13 หลัก */
+function buildPromptPayPayload(promptpayId, amount) {
+  const digits = String(promptpayId).replace(/[^0-9]/g, '');
+  let idType, idValue;
+  if (digits.length === 10 && digits[0] === '0') {
+    idType = '01';
+    idValue = '0066' + digits.slice(1);
+  } else if (digits.length === 13) {
+    idType = '02';
+    idValue = digits;
+  } else {
+    throw new Error('รูปแบบ PromptPay ไม่ถูกต้อง');
+  }
+
+  const merchantInfo = tlv('00', 'A000000677010111') + tlv(idType, idValue);
+  let payload = tlv('00', '01') + tlv('01', amount > 0 ? '12' : '11') + tlv('29', merchantInfo) + tlv('53', '764');
+  if (amount > 0) payload += tlv('54', amount.toFixed(2));
+  payload += tlv('58', 'TH');
+  payload += '6304';
+  payload += crc16ccitt(payload);
+  return payload;
+}
+
+function matrixToSVG(matrix) {
+  const n = matrix.length;
+  const quiet = 2;
+  const size = n + quiet * 2;
+  let rects = '';
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      if (matrix[r][c] === 1) rects += `<rect x="${c + quiet}" y="${r + quiet}" width="1" height="1"/>`;
+    }
+  }
+  return `<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="0" y="0" width="${size}" height="${size}" fill="#fff"/><g fill="#000">${rects}</g></svg>`;
+}
+
+async function loadPromptPaySettings() {
+  try {
+    const rows = await dbGetAll('settings');
+    return rows.find(r => r.id === 'promptpay') || null;
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+}
+
+function openPromptPaySettings() {
+  loadPromptPaySettings().then(row => {
+    document.getElementById('input-promptpay-id').value = row ? row.promptpayId : '';
+    openModal('modal-promptpay');
+  });
+}
+
+async function submitPromptPaySettings() {
+  const raw = document.getElementById('input-promptpay-id').value.trim();
+  const digits = raw.replace(/[^0-9]/g, '');
+  if (digits.length !== 10 && digits.length !== 13) {
+    showToast('กรอกเบอร์โทร 10 หลัก หรือเลขบัตร/ภาษี 13 หลัก');
+    return;
+  }
+  try {
+    await dbPut('settings', { id: 'promptpay', promptpayId: digits });
+    closeModal('modal-promptpay');
+    showToast('บันทึกแล้ว');
+    // ถ้ากำลังอยู่หน้า QR อยู่แล้ว ให้รีเฟรช QR ใหม่ทันที
+    if (document.getElementById('page-pay-qr').classList.contains('active')) {
+      goToQRPage();
+    }
+  } catch (e) {
+    console.error(e);
+    showToast('บันทึกไม่สำเร็จ');
+  }
+}
+
+async function goToQRPage() {
+  if (Object.keys(_cart).length === 0) return;
+  const total = getCartTotal();
+  document.getElementById('qr-total-amount').textContent = fmt(total) + ' บ.';
+  switchPage('page-pay-qr');
+  const body = document.getElementById('qr-page-body');
+  body.innerHTML = '<div class="qr-not-setup">กำลังโหลด...</div>';
+
+  const pp = await loadPromptPaySettings();
+  if (!pp) {
+    body.innerHTML = `
+      <div class="qr-not-setup">
+        ยังไม่ได้ตั้งค่า PromptPay<br>
+        <button class="btn btn-primary" style="margin-top:14px;" onclick="openPromptPaySettings()">ตั้งค่าตอนนี้</button>
+      </div>`;
+    return;
+  }
+
+  try {
+    const payload = buildPromptPayPayload(pp.promptpayId, total);
+    const matrix = encodeQR(payload);
+    const svg = matrixToSVG(matrix);
+    body.innerHTML = `
+      <div class="qr-box">${svg}</div>
+      <div class="qr-hint">ให้ลูกค้าสแกนจ่ายผ่านแอปธนาคาร แล้วกดยืนยันด้านล่างหลังเช็คเงินเข้าแล้ว</div>
+      <div class="pay-confirm-row">
+        <button class="btn btn-primary" style="width:100%;" onclick="confirmQRPayment()">✅ ยืนยันว่าลูกค้าโอนแล้ว</button>
+      </div>`;
+  } catch (e) {
+    console.error(e);
+    body.innerHTML = `<div class="qr-not-setup">สร้าง QR ไม่สำเร็จ: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function confirmQRPayment() {
+  finalizeSale('qr', {});
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   บันทึกการขายจริง (ตัดสต็อก + save ลง store "sales") — เกิดตอนชำระสำเร็จเท่านั้น
+   ══════════════════════════════════════════════════════════════ */
+
+let _lastSaleId = null;
+
+async function finalizeSale(method, extra) {
+  extra = extra || {};
+  const entries = Object.entries(_cart).filter(([, qty]) => qty > 0);
+  if (entries.length === 0) return;
+
+  const items = entries.map(([pid, qty]) => {
+    const p = _posProducts.find(x => x.id === pid);
+    return {
+      productId: pid,
+      name: p ? p.name : 'สินค้า',
+      icon: p ? p.icon : '🛍️',
+      price: p ? p.price : 0,
+      qty,
+      subtotal: (p ? p.price : 0) * qty,
+      refundedQty: 0,
+    };
+  });
+  const total = items.reduce((s, it) => s + it.subtotal, 0);
+
+  const sale = {
+    id: uid(),
+    createdAt: Date.now(),
+    items,
+    total,
+    paymentMethod: method, // 'cash' | 'qr'
+    cashReceived: extra.cashReceived != null ? extra.cashReceived : null,
+    changeGiven: extra.changeGiven != null ? extra.changeGiven : null,
+    refundStatus: 'none', // 'none' | 'partial' | 'full'
+    refundedTotal: 0,
+  };
+
+  try {
+    for (const it of items) {
+      const p = _posProducts.find(x => x.id === it.productId);
+      if (p && p.stockEnabled) {
+        p.stock = Math.max(0, p.stock - it.qty);
+        await dbPut('products', p);
+      }
+    }
+    await dbPut('sales', sale);
+  } catch (e) {
+    console.error(e);
+    showToast('บันทึกการขายไม่สำเร็จ กรุณาลองใหม่');
+    return;
+  }
+
+  _cart = {};
+  _lastSaleId = sale.id;
+  await loadPOSProducts();
+
+  document.getElementById('paid-amount').textContent = fmt(total) + ' บ.';
+  document.getElementById('paid-sub').textContent = method === 'cash'
+    ? `เงินสด · รับ ${fmt(extra.cashReceived)} บ. ทอน ${fmt(extra.changeGiven)} บ.`
+    : 'พร้อมเพย์ (QR)';
+  switchPage('page-paid');
+}
+
+function startNewSale() {
+  renderPOSGrid();
+  renderCartBar();
+  switchPage('page-pos');
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   ใบเสร็จ + คืนเงิน (Refund)
+   ══════════════════════════════════════════════════════════════ */
+
+let _receiptPreviousId = null;
+let _currentReceiptSale = null;
+
+async function goToReceiptPage(saleId, fromPaid) {
+  const sales = await dbGetAll('sales');
+  const sale = sales.find(s => s.id === saleId);
+  if (!sale) { showToast('ไม่พบใบเสร็จนี้'); return; }
+
+  const current = document.querySelector('.page.active');
+  _receiptPreviousId = fromPaid ? 'page-pos' : (current ? current.id : 'page-sales-history');
+  _currentReceiptSale = sale;
+
+  switchPage('page-receipt');
+  renderReceiptPage(sale);
+}
+
+function closeReceiptPage() {
+  const target = _receiptPreviousId || 'page-pos';
+  switchPage(target);
+  if (target === 'page-pos') {
+    renderPOSGrid();
+    renderCartBar();
+  } else if (target === 'page-sales-history') {
+    renderSalesHistory();
+  }
+}
+
+function renderReceiptPage(sale) {
+  const dt = new Date(sale.createdAt);
+  const dateStr = dt.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }) +
+    ' ' + dt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+  const statusClass = sale.refundStatus === 'full' ? 'refunded' : (sale.refundStatus === 'partial' ? 'partial' : 'paid');
+  const statusLabel = sale.refundStatus === 'full' ? 'คืนเงินเต็มจำนวน' : (sale.refundStatus === 'partial' ? 'คืนเงินบางส่วน' : 'ชำระแล้ว');
+
+  const linesHtml = sale.items.map(it => {
+    const remainingQty = it.qty - (it.refundedQty || 0);
+    const fullyRefunded = remainingQty <= 0;
+    return `
+      <div class="receipt-line ${fullyRefunded ? 'refunded' : ''}">
+        <div>
+          <div class="rl-name">${it.icon} ${escapeHtml(it.name)} × ${it.qty}</div>
+          ${it.refundedQty > 0 ? `<div class="rl-sub">คืนแล้ว ${it.refundedQty} ชิ้น</div>` : ''}
+        </div>
+        <div class="rl-amount">${fmt(it.subtotal)} บ.</div>
+      </div>`;
+  }).join('');
+
+  const paymentLabel = sale.paymentMethod === 'cash'
+    ? `เงินสด (รับ ${fmt(sale.cashReceived)} ทอน ${fmt(sale.changeGiven)})`
+    : 'พร้อมเพย์ (QR)';
+
+  const canRefund = sale.refundStatus !== 'full';
+
+  document.getElementById('receipt-body').innerHTML = `
+    <div class="receipt-meta">
+      <div class="rm-id">#${sale.id}</div>
+      <div class="rm-date">${dateStr} · ${paymentLabel}</div>
+      <div class="rm-status ${statusClass}">${statusLabel}</div>
+    </div>
+    <div>${linesHtml}</div>
+    <div class="receipt-total-row">
+      <span>ยอดสุทธิ</span>
+      <span class="rt-amount">${fmt(sale.total - (sale.refundedTotal || 0))} บ.</span>
+    </div>
+    ${sale.refundedTotal > 0 ? `<div style="text-align:right; font-size:12px; color:var(--text-dim); margin-top:-6px;">คืนเงินไปแล้ว ${fmt(sale.refundedTotal)} บ.</div>` : ''}
+    ${canRefund ? `<button class="btn btn-secondary" style="width:100%; margin-top:20px;" onclick="openRefundModal()">↩️ คืนเงิน</button>` : ''}
+  `;
+}
+
+let _refundQtyState = {};
+
+function openRefundModal() {
+  const sale = _currentReceiptSale;
+  if (!sale) return;
+  _refundQtyState = {};
+  sale.items.forEach(it => { _refundQtyState[it.productId] = 0; });
+  renderRefundLines();
+  openModal('modal-refund');
+}
+
+function renderRefundLines() {
+  const sale = _currentReceiptSale;
+  const container = document.getElementById('refund-lines-container');
+  container.innerHTML = sale.items.map(it => {
+    const remaining = it.qty - (it.refundedQty || 0);
+    const selected = _refundQtyState[it.productId] || 0;
+    if (remaining <= 0) return '';
+    return `
+      <div class="refund-qty-row">
+        <div class="rq-main">${it.icon} ${escapeHtml(it.name)}<br><span style="color:var(--text-dim); font-size:11.5px;">คืนได้สูงสุด ${remaining} ชิ้น</span></div>
+        <div class="rq-stepper">
+          <button onclick="adjustRefundQty('${it.productId}', -1)">−</button>
+          <div style="min-width:18px; text-align:center; font-weight:700;">${selected}</div>
+          <button onclick="adjustRefundQty('${it.productId}', 1)">+</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  let refundTotal = 0;
+  sale.items.forEach(it => { refundTotal += (_refundQtyState[it.productId] || 0) * it.price; });
+  document.getElementById('refund-total-amount').textContent = fmt(refundTotal) + ' บ.';
+  document.getElementById('refund-confirm-btn').disabled = refundTotal <= 0;
+}
+
+function adjustRefundQty(productId, delta) {
+  const sale = _currentReceiptSale;
+  const item = sale.items.find(it => it.productId === productId);
+  const remaining = item.qty - (item.refundedQty || 0);
+  let next = (_refundQtyState[productId] || 0) + delta;
+  next = Math.max(0, Math.min(remaining, next));
+  _refundQtyState[productId] = next;
+  renderRefundLines();
+}
+
+async function submitRefund() {
+  const sale = _currentReceiptSale;
+  if (!sale) return;
+  const refundItems = Object.entries(_refundQtyState).filter(([, qty]) => qty > 0);
+  if (refundItems.length === 0) return;
+
+  const returnStock = confirm('คืนสต็อกสินค้าที่รับคืนกลับเข้าคลังด้วยไหม?');
+
+  let refundAmount = 0;
+  for (const [pid, qty] of refundItems) {
+    const item = sale.items.find(it => it.productId === pid);
+    item.refundedQty = (item.refundedQty || 0) + qty;
+    refundAmount += qty * item.price;
+
+    if (returnStock) {
+      const p = _posProducts.find(x => x.id === pid);
+      if (p && p.stockEnabled) {
+        p.stock = p.stock + qty;
+        try { await dbPut('products', p); } catch (e) { console.error(e); }
+      }
+    }
+  }
+
+  sale.refundedTotal = (sale.refundedTotal || 0) + refundAmount;
+  const totalQty = sale.items.reduce((s, it) => s + it.qty, 0);
+  const totalRefundedQty = sale.items.reduce((s, it) => s + (it.refundedQty || 0), 0);
+  sale.refundStatus = totalRefundedQty >= totalQty ? 'full' : 'partial';
+
+  try {
+    await dbPut('sales', sale);
+    if (returnStock) await loadPOSProducts();
+    closeModal('modal-refund');
+    renderReceiptPage(sale);
+    showToast('คืนเงินเรียบร้อย');
+  } catch (e) {
+    console.error(e);
+    showToast('คืนเงินไม่สำเร็จ');
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   ประวัติการขาย (รายการใบเสร็จทั้งหมด)
+   ══════════════════════════════════════════════════════════════ */
+
+function goToSalesHistoryPage() {
+  if (!getActiveRoomCode()) { showToast('กรุณาเลือก/สร้างร้านก่อน'); return; }
+  openSubPage('page-sales-history');
+  renderSalesHistory();
+}
+
+async function renderSalesHistory() {
+  const container = document.getElementById('sales-history-body');
+  container.innerHTML = '<div class="sm-empty">กำลังโหลด...</div>';
+  let sales;
+  try {
+    sales = await dbGetAll('sales');
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = '<div class="sm-empty">โหลดข้อมูลไม่สำเร็จ</div>';
+    return;
+  }
+  sales.sort((a, b) => b.createdAt - a.createdAt);
+
+  if (sales.length === 0) {
+    container.innerHTML = '<div class="sm-empty">ยังไม่มีรายการขาย</div>';
+    return;
+  }
+
+  container.innerHTML = sales.map(sale => {
+    const dt = new Date(sale.createdAt);
+    const timeStr = dt.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' }) +
+      ' ' + dt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    const itemCount = sale.items.reduce((s, it) => s + it.qty, 0);
+    const netTotal = sale.total - (sale.refundedTotal || 0);
+    const badge = sale.refundStatus === 'full' ? '<span class="hi-badge refunded">คืนเต็ม</span>'
+      : sale.refundStatus === 'partial' ? '<span class="hi-badge partial">คืนบางส่วน</span>' : '';
+    return `
+      <div class="history-item" onclick="goToReceiptPage('${sale.id}', false)">
+        <div class="hi-main">
+          <div class="hi-time">${timeStr} · ${sale.paymentMethod === 'cash' ? '💵' : '📱'}</div>
+          <div class="hi-summary">${itemCount} ชิ้น</div>
+        </div>
+        ${badge}
+        <div class="hi-amount">${fmt(netTotal)} บ.</div>
+      </div>`;
+  }).join('');
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   สรุปยอด + Export / Import
+   ══════════════════════════════════════════════════════════════ */
+
+function goToSummaryPage() {
+  if (!getActiveRoomCode()) { showToast('กรุณาเลือก/สร้างร้านก่อน'); return; }
+  openSubPage('page-summary');
+  renderSummaryPage();
+}
+
+async function renderSummaryPage() {
+  const container = document.getElementById('summary-body');
+  container.innerHTML = '<div class="sm-empty">กำลังโหลด...</div>';
+
+  let sales, owners;
+  try {
+    [sales, owners] = await Promise.all([dbGetAll('sales'), dbGetAll('owners')]);
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = '<div class="sm-empty">โหลดข้อมูลไม่สำเร็จ</div>';
+    return;
+  }
+
+  const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+  const todaySales = sales.filter(s => s.createdAt >= startOfToday.getTime());
+
+  function netTotal(s) { return s.total - (s.refundedTotal || 0); }
+  const todayRevenue = todaySales.reduce((sum, s) => sum + netTotal(s), 0);
+  const todayCount = todaySales.length;
+  const allRevenue = sales.reduce((sum, s) => sum + netTotal(s), 0);
+  const allCount = sales.length;
+
+  // สรุปยอดวันนี้ แยกตามเจ้าของ (อิงจากสินค้าที่ยังอยู่ในระบบตอนนี้)
+  const ownerTotals = {};
+  const products = await dbGetAll('products');
+  todaySales.forEach(s => {
+    s.items.forEach(it => {
+      const remainingQty = it.qty - (it.refundedQty || 0);
+      if (remainingQty <= 0) return;
+      const p = products.find(x => x.id === it.productId);
+      const ownerId = p ? p.ownerId : null;
+      const key = ownerId || '_none';
+      ownerTotals[key] = (ownerTotals[key] || 0) + it.price * remainingQty;
+    });
+  });
+  const ownerRowsHtml = Object.entries(ownerTotals).map(([key, amount]) => {
+    const owner = owners.find(o => o.id === key);
+    const name = owner ? `${owner.icon || '🧑‍💼'} ${owner.name}` : 'ไม่ระบุเจ้าของ';
+    return `<div class="summary-owner-row"><span class="so-name">${escapeHtml(name)}</span><span class="so-amount">${fmt(amount)} บ.</span></div>`;
+  }).join('') || '<div class="sm-empty" style="padding:16px 0;">ยังไม่มียอดขายวันนี้</div>';
+
+  container.innerHTML = `
+    <div class="summary-row-2">
+      <div class="summary-card">
+        <div class="sc-label">ยอดขายวันนี้</div>
+        <div class="sc-value">${fmt(todayRevenue)}</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-label">บิลวันนี้</div>
+        <div class="sc-value">${fmt(todayCount)}</div>
+      </div>
+    </div>
+    <div class="summary-row-2">
+      <div class="summary-card">
+        <div class="sc-label">ยอดขายรวมทั้งหมด</div>
+        <div class="sc-value">${fmt(allRevenue)}</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-label">บิลทั้งหมด</div>
+        <div class="sc-value">${fmt(allCount)}</div>
+      </div>
+    </div>
+    <div style="font-size:13.5px; font-weight:700; color:var(--text); margin:18px 0 4px;">แยกตามเจ้าของ (วันนี้)</div>
+    <div>${ownerRowsHtml}</div>
+
+    <div style="font-size:13.5px; font-weight:700; color:var(--text); margin:22px 0 4px;">ข้อมูล</div>
+    <button class="btn btn-secondary" style="width:100%; margin-bottom:10px;" onclick="exportStoreData()">⬇️ Export ข้อมูลร้านนี้ (.json)</button>
+    <button class="btn btn-secondary" style="width:100%;" onclick="document.getElementById('import-file-input').click()">⬆️ Import ข้อมูล (.json)</button>
+    <input type="file" id="import-file-input" accept="application/json" style="display:none;" onchange="importStoreData(event)">
+  `;
+}
+
+async function exportStoreData() {
+  const roomCode = getActiveRoomCode();
+  if (!roomCode) return;
+  try {
+    const dump = {};
+    for (const storeName of DB_STORES) {
+      dump[storeName] = await dbGetAll(storeName);
+    }
+    const store = getStoreRegistry().find(s => s.roomCode === roomCode);
+    const payload = { exportedAt: Date.now(), roomCode, storeName: store ? store.name : '', data: dump };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pos-export-${roomCode}-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast('Export สำเร็จ');
+  } catch (e) {
+    console.error(e);
+    showToast('Export ไม่สำเร็จ');
+  }
+}
+
+function importStoreData(event) {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+
+  const ok = confirm('Import จะเขียนทับข้อมูลทุกอย่างของร้านนี้ (วัตถุดิบ/เจ้าของ/สินค้า/ประวัติขาย) ด้วยข้อมูลในไฟล์ ต้องการดำเนินการต่อหรือไม่?');
+  if (!ok) return;
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const dump = parsed.data || parsed; // เผื่อไฟล์เป็น raw dump ไม่มี wrapper
+      for (const storeName of DB_STORES) {
+        if (!Array.isArray(dump[storeName])) continue;
+        await dbClear(storeName);
+        for (const row of dump[storeName]) {
+          await dbPut(storeName, row);
+        }
+      }
+      await loadPOSProducts();
+      renderSummaryPage();
+      showToast('Import สำเร็จ');
+    } catch (err) {
+      console.error(err);
+      showToast('ไฟล์ไม่ถูกต้อง หรือ Import ไม่สำเร็จ');
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+</script>
+
+</body>
+</html>
