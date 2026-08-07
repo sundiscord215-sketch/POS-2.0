@@ -3915,6 +3915,7 @@ return {
   _cart = {};
   _lastSaleId = sale.id;
   await loadPOSProducts();
+  renderPOSCartPanel();
 
 document.getElementById('paid-amount').textContent = fmt(total) + ' บ.';
   document.getElementById('paid-sub').textContent = method === 'cash'
@@ -3958,6 +3959,7 @@ function clearPaidCountdown() {
 function startNewSale() {
   renderPOSGrid();
   renderCartBar();
+  renderPOSCartPanel();
   switchPage('page-pos');
 }
 
