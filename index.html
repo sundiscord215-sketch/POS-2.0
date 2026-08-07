@@ -2959,8 +2959,8 @@ async function goToPOSPage() {
   await loadPOSProducts();
   renderPOSGrid();
   renderCartBar();
+  renderPOSCartPanel();
 }
-
 async function loadPOSProducts() {
   try {
     _posProducts = await dbGetAll('products');
@@ -3026,9 +3026,10 @@ function addToCart(productId) {
     return;
   }
 
-  _cart[productId] = current + 1;
+_cart[productId] = current + 1;
   renderPOSGrid();
   renderCartBar();
+  renderPOSCartPanel();
   if (document.getElementById('modal-cart').classList.contains('open')) {
     renderCartSheet();
   }
@@ -3099,6 +3100,7 @@ function decrementCartLine(productId) {
   renderPOSGrid();
   renderCartBar();
   renderCartSheet();
+  renderPOSCartPanel();
 }
 
 function removeCartLine(productId) {
@@ -3106,6 +3108,7 @@ function removeCartLine(productId) {
   renderPOSGrid();
   renderCartBar();
   renderCartSheet();
+  renderPOSCartPanel();
 }
 
 function clearCartConfirm() {
@@ -3116,6 +3119,49 @@ function clearCartConfirm() {
   renderPOSGrid();
   renderCartBar();
   renderCartSheet();
+  renderPOSCartPanel();
+}
+
+/** แผงตะกร้าด้านขวา (จอกว้าง) — โชว์ตลอด แม้ตะกร้าว่าง */
+function renderPOSCartPanel() {
+  const linesEl = document.getElementById('pcp-lines');
+  const totalEl = document.getElementById('pcp-total-amount');
+  const cashBtn = document.getElementById('pcp-cash-btn');
+  const qrBtn = document.getElementById('pcp-qr-btn');
+  if (!linesEl) return; // element อาจยังไม่ mount (กันพลาด)
+
+  const entries = Object.entries(_cart).filter(([, qty]) => qty > 0);
+
+  if (entries.length === 0) {
+    linesEl.innerHTML = `<div class="sm-empty" style="margin:12px 0; font-size:13px;">ตะกร้าว่างเปล่า</div>`;
+  } else {
+    linesEl.innerHTML = entries.map(([pid, qty]) => {
+      const p = _posProducts.find(x => x.id === pid);
+      if (!p) return '';
+      const subtotal = p.price * qty;
+      return `
+        <div class="cart-line">
+          <div class="cl-icon">${p.icon}</div>
+          <div class="cl-main">
+            <div class="cl-name">${escapeHtml(p.name)}</div>
+            <div class="cl-unit-price">${fmt(p.price)} บ. / ชิ้น</div>
+          </div>
+          <div class="cl-stepper">
+            <button onclick="decrementCartLine('${pid}')">−</button>
+            <div class="cl-qty">${qty}</div>
+            <button onclick="addToCart('${pid}')">+</button>
+          </div>
+          <div class="cl-subtotal">${fmt(subtotal)} บ.</div>
+          <button class="cl-remove" onclick="removeCartLine('${pid}')">🗑</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  totalEl.textContent = fmt(getCartTotal()) + ' บ.';
+  const disabled = entries.length === 0;
+  if (cashBtn) cashBtn.disabled = disabled;
+  if (qrBtn) qrBtn.disabled = disabled;
 }
 
 
@@ -3486,11 +3532,30 @@ function chargeCart() {
 
 function goToCashPage() {
   if (Object.keys(_cart).length === 0) return;
+  closeModal('modal-payment-method');
+  closeModal('modal-cart');
+  renderPayBillLines('cash-bill-lines');
   document.getElementById('cash-total-amount').textContent = fmt(getCartTotal()) + ' บ.';
   document.getElementById('cash-received-input').value = '';
   renderCashQuickButtons();
   renderCashChange();
   switchPage('page-pay-cash');
+}
+
+/** โชว์รายการสินค้าฝั่งซ้ายของหน้าเงินสด/QR (อ่านอย่างเดียว) */
+function renderPayBillLines(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const entries = Object.entries(_cart).filter(([, qty]) => qty > 0);
+  container.innerHTML = entries.map(([pid, qty]) => {
+    const p = _posProducts.find(x => x.id === pid);
+    if (!p) return '';
+    return `
+      <div class="pay-bill-line">
+        <span class="pbl-name">${p.icon} ${escapeHtml(p.name)} × ${qty}</span>
+        <span class="pbl-amount">${fmt(p.price * qty)} บ.</span>
+      </div>`;
+  }).join('');
 }
 
 function renderCashQuickButtons() {
@@ -3636,6 +3701,9 @@ async function submitPromptPaySettings() {
 
 async function goToQRPage() {
   if (Object.keys(_cart).length === 0) return;
+  closeModal('modal-payment-method');
+  closeModal('modal-cart');
+  renderPayBillLines('qr-bill-lines');
   const total = getCartTotal();
   document.getElementById('qr-total-amount').textContent = fmt(total) + ' บ.';
   switchPage('page-pay-qr');
@@ -3729,11 +3797,43 @@ async function finalizeSale(method, extra) {
   _lastSaleId = sale.id;
   await loadPOSProducts();
 
-  document.getElementById('paid-amount').textContent = fmt(total) + ' บ.';
+document.getElementById('paid-amount').textContent = fmt(total) + ' บ.';
   document.getElementById('paid-sub').textContent = method === 'cash'
     ? `เงินสด · รับ ${fmt(extra.cashReceived)} บ. ทอน ${fmt(extra.changeGiven)} บ.`
     : 'พร้อมเพย์ (QR)';
   switchPage('page-paid');
+  startPaidCountdown();
+}
+
+/* ── นับถอยหลังหน้า Paid แล้วเด้งกลับหน้าขายอัตโนมัติ ── */
+let _paidCountdownInterval = null;
+
+function startPaidCountdown() {
+  clearPaidCountdown();
+  let remaining = 3;
+  const el = document.getElementById('paid-countdown');
+  if (el) el.textContent = remaining;
+
+  _paidCountdownInterval = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearPaidCountdown();
+      // กันเผื่อกดออกจากหน้า paid ไปที่อื่นแล้ว (เช่นเข้าดูใบเสร็จ) ไม่ให้ดีดกลับซ้อน
+      const current = document.querySelector('.page.active');
+      if (current && current.id === 'page-paid') {
+        startNewSale();
+      }
+      return;
+    }
+    if (el) el.textContent = remaining;
+  }, 1000);
+}
+
+function clearPaidCountdown() {
+  if (_paidCountdownInterval) {
+    clearInterval(_paidCountdownInterval);
+    _paidCountdownInterval = null;
+  }
 }
 
 function startNewSale() {
@@ -3751,6 +3851,7 @@ let _receiptPreviousId = null;
 let _currentReceiptSale = null;
 
 async function goToReceiptPage(saleId, fromPaid) {
+  clearPaidCountdown();
   const sales = await dbGetAll('sales');
   const sale = sales.find(s => s.id === saleId);
   if (!sale) { showToast('ไม่พบใบเสร็จนี้'); return; }
