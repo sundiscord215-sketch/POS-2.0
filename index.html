@@ -774,9 +774,9 @@
     padding: 0 0 12px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    text-align: center;
+    align-items: stretch;
+    gap: 3px;
+    text-align: left;
     transition: transform .1s ease;
   }
   .pos-card:active { transform: scale(0.96); }
@@ -790,20 +790,27 @@
     align-items: center;
     justify-content: center;
     font-size: 34px;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
     overflow: hidden;
   }
-  .pos-card .pos-card-name { padding: 0 8px; }
-  .pos-card .pos-card-price { padding: 0 8px; }
-  .pos-card .pos-card-stock { padding: 0 8px 2px; }
   .pos-card .pos-card-name {
-    font-size: 13.5px;
-    font-weight: 700;
-    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
     line-height: 1.3;
+    padding: 0 10px;
   }
-  .pos-card .pos-card-price { font-size: 13px; color: var(--accent); font-weight: 700; }
-  .pos-card .pos-card-stock { font-size: 10.5px; color: var(--text-dim); }
+  .pos-card .pos-card-price {
+    font-size: 17px;
+    color: var(--text);
+    font-weight: 800;
+    padding: 0 10px;
+  }
+  .pos-card .pos-card-stock {
+    font-size: 11px;
+    color: var(--text-faint);
+    padding: 0 10px;
+  }
 .pos-card .pos-card-qty-badge {
     position: absolute;
     top: 6px;
