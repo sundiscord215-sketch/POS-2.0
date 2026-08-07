@@ -726,20 +726,25 @@
   /* แผงตะกร้าด้านขวา — โชว์เฉพาะจอกว้าง (iPad ขึ้นไป) */
   .pos-cart-panel { display: none; }
 
-  @media (min-width: 860px) {
-    .pos-layout { flex-direction: row; }
-    .pos-left { flex: 1.6; }
+@media (min-width: 860px) {
+    .pos-layout { flex-direction: row; padding-right: 340px; box-sizing: border-box; }
+    .pos-left { flex: 1; }
     .pos-grid { padding: 14px; }
 
     .pos-cart-panel {
       display: flex;
       flex-direction: column;
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
       width: 340px;
-      flex-shrink: 0;
       background: var(--surface);
       border-left: 1px solid var(--border);
       padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
       overflow: hidden;
+      z-index: 20;
+      box-shadow: -2px 0 12px rgba(0,0,0,0.06);
     }
     .pos-cart-panel .pcp-title {
       font-size: 15px; font-weight: 800; color: var(--text);
@@ -752,7 +757,7 @@
       padding: 10px 0; font-size: 15px; font-weight: 800; color: var(--text);
     }
     .pos-cart-panel .pcp-total-row .pcp-amount { color: var(--cta); font-size: 20px; }
-.pos-cart-panel .pcp-pay-row { display: flex; gap: 10px; }
+    .pos-cart-panel .pcp-pay-row { display: flex; gap: 10px; }
     .pos-cart-panel .pcp-pay-row .btn { padding: 14px; }
 
     /* จอกว้างมีแผงขวาแทนแล้ว ไม่ต้องมีแถบลอย */
