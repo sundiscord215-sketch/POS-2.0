@@ -1515,7 +1515,7 @@
 
     <!-- หมวด 2: ใบเสร็จ/Refund -->
     <div class="sp-category">
-      <div class="sp-category-row" onclick="closeSettingsPanel(); goToSalesHistoryPage();">
+     <div class="sp-category-row" onclick="closeSettingsPanel(); goToSummaryPage();">
         <div class="sp-icon">🧾</div>
         <div class="sp-main">
           <div class="sp-label">ใบเสร็จ / Refund</div>
@@ -2393,6 +2393,7 @@ function deleteActiveStoreEntirely() {
    ══════════════════════════════════════════════════════════════ */
 
 let _subPagePreviousId = null;
+let _cameFromSettingsPanel = false;
 
 function openSubPage(pageId) {
   const current = document.querySelector('.page.active');
@@ -2410,13 +2411,18 @@ function closeSubPage() {
       renderCartBar();
     });
   }
+  // ถ้าเข้ามาหน้านี้จากเมนูตั้งค่า ให้เปิดเมนูตั้งค่ากลับคืนแทนที่จะปล่อยค้างที่หน้าขาย
+  if (_cameFromSettingsPanel) {
+    _cameFromSettingsPanel = false;
+    openSettingsPanel();
+  }
 }
-
 function goToMaterialsPage() {
   if (!getActiveRoomCode()) {
     showToast('กรุณาเลือก/สร้างร้านก่อน');
     return;
   }
+  _cameFromSettingsPanel = true;
   closeSettingsPanel();
   openSubPage('page-materials');
   renderMaterialsList();
@@ -4201,6 +4207,7 @@ async function submitRefund() {
 
 function goToSalesHistoryPage() {
   if (!getActiveRoomCode()) { showToast('กรุณาเลือก/สร้างร้านก่อน'); return; }
+  _cameFromSettingsPanel = true;
   openSubPage('page-sales-history');
   renderSalesHistory();
 }
@@ -4250,6 +4257,7 @@ async function renderSalesHistory() {
 
 function goToSummaryPage() {
   if (!getActiveRoomCode()) { showToast('กรุณาเลือก/สร้างร้านก่อน'); return; }
+  _cameFromSettingsPanel = true;
   openSubPage('page-summary');
   renderSummaryPage();
 }
