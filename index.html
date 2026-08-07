@@ -153,16 +153,13 @@
   }
 
   /* ── Connection status dot (utility ทั่วไป, ยังไม่ผูกระบบจริง) ── */
-  #conn-status {
-    position: fixed;
-    top: 14px;
-    right: 16px;
+ #conn-status {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 12px;
+    gap: 5px;
+    font-size: 11px;
     color: var(--text-dim);
-    z-index: 50;
+    margin-top: 2px;
   }
   #conn-status .dot {
     width: 8px;
@@ -1175,18 +1172,15 @@
 
 <div id="app">
 
-  <div id="conn-status" class="offline">
-    <span class="dot"></span>
-    <span class="label">ออฟไลน์</span>
-  </div>
-
-  <!-- TOP NAV: โชว์ร้านปัจจุบัน (ซ่อนถ้ายังไม่มีร้าน active)
-       แตะได้: จากหน้าขาย -> ไปหน้าจัดการร้าน (สลับ/สร้างร้าน), จากหน้าอื่น -> กลับไปหน้าขาย -->
-<div id="topnav" onclick="handleTopNavTap()" style="cursor:pointer;">
+ <div id="topnav" onclick="handleTopNavTap()" style="cursor:pointer;">
     <div class="tn-badge" id="tn-badge">🏪</div>
     <div class="tn-text">
       <div class="tn-name" id="tn-name">—</div>
       <div class="tn-code" id="tn-code">—</div>
+      <div id="conn-status" class="offline">
+        <span class="dot"></span>
+        <span class="label">ออฟไลน์</span>
+      </div>
     </div>
     <button id="settings-fab" onclick="event.stopPropagation(); openSettingsPanel();">⚙️</button>
   </div>
