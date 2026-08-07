@@ -758,31 +758,37 @@
     .cart-bar { display: none !important; }
   }
 
-  .pos-card {
+.pos-card {
     position: relative;
     background: var(--surface);
     border: 1.5px solid var(--border);
     border-radius: var(--radius);
-    padding: 16px 10px 12px;
+    padding: 0 0 12px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     text-align: center;
+    overflow: hidden;
     transition: transform .1s ease;
   }
   .pos-card:active { transform: scale(0.96); }
   .pos-card.disabled { opacity: 0.4; pointer-events: none; }
   .pos-card .pos-card-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius) var(--radius) 0 0;
     background: var(--surface2);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    font-size: 34px;
+    margin-bottom: 4px;
+    overflow: hidden;
   }
+  .pos-card .pos-card-name { padding: 0 8px; }
+  .pos-card .pos-card-price { padding: 0 8px; }
+  .pos-card .pos-card-stock { padding: 0 8px 2px; }
   .pos-card .pos-card-name {
     font-size: 13.5px;
     font-weight: 700;
