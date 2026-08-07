@@ -804,7 +804,7 @@
   }
   .pos-card .pos-card-price { font-size: 13px; color: var(--accent); font-weight: 700; }
   .pos-card .pos-card-stock { font-size: 10.5px; color: var(--text-dim); }
-  .pos-card .pos-card-qty-badge {
+.pos-card .pos-card-qty-badge {
     position: absolute;
     top: 6px;
     right: 6px;
@@ -823,6 +823,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.35);
     z-index: 2;
   }
+  .pos-card { -webkit-tap-highlight-color: transparent; }
   /* ── แถบตะกร้าลอย (มุมล่าง) — ใช้เฉพาะจอแคบ/มือถือ ── */
   .cart-bar {
     display: none;
@@ -3086,19 +3087,19 @@ function renderPOSGrid() {
     return;
   }
 
-  container.innerHTML = _posProducts.map(p => {
+container.innerHTML = _posProducts.map(p => {
     const inCart = cartQtyOf(p.id);
     const outOfStock = p.stockEnabled && p.stock <= 0;
     const atMax = p.stockEnabled && inCart >= p.stock;
     const disabled = outOfStock || atMax;
   return `
-      <button class="pos-card ${disabled ? 'disabled' : ''}" onclick="addToCart('${p.id}')">
-        ${inCart > 0 ? `<div class="pos-card-qty-badge">${inCart}</div>` : ''}
+      <div class="pos-card ${disabled ? 'disabled' : ''}" role="button" tabindex="0" onclick="addToCart('${p.id}')">
         <div class="pos-card-icon">${productThumbHtml(p)}</div>
+        ${inCart > 0 ? `<div class="pos-card-qty-badge">${inCart}</div>` : ''}
         <div class="pos-card-name">${escapeHtml(p.name)}</div>
         <div class="pos-card-price">${fmt(p.price)} บ.</div>
         ${p.stockEnabled ? `<div class="pos-card-stock">เหลือ ${fmt(p.stock)}</div>` : ''}
-      </button>
+      </div>
     `;
   }).join('');
 }
