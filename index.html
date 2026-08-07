@@ -673,10 +673,13 @@
   .sp-detail-btn.danger { background: rgba(239,68,68,0.1); color: var(--danger); }
   .sp-detail-btn.danger-solid { background: var(--danger); color: #fff; }
 
-  /* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════
      PAGE: ขาย (POS) หลัก
      ══════════════════════════════════════════════ */
   #page-pos { background: var(--bg); position: relative; }
+
+  .pos-layout { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .pos-left { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
   .pos-grid {
     flex: 1;
@@ -690,6 +693,43 @@
   @media (min-width: 480px) {
     .pos-grid { grid-template-columns: repeat(3, 1fr); }
   }
+
+  /* แผงตะกร้าด้านขวา — โชว์เฉพาะจอกว้าง (iPad ขึ้นไป) */
+  .pos-cart-panel { display: none; }
+
+  @media (min-width: 860px) {
+    .pos-layout { flex-direction: row; }
+    .pos-left { flex: 1.6; }
+    .pos-grid { padding: 14px; }
+
+    .pos-cart-panel {
+      display: flex;
+      flex-direction: column;
+      width: 340px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+      overflow: hidden;
+    }
+    .pos-cart-panel .pcp-title {
+      font-size: 15px; font-weight: 800; color: var(--text);
+      margin-bottom: 10px; flex-shrink: 0;
+    }
+    .pos-cart-panel .pcp-lines { flex: 1; overflow-y: auto; min-height: 0; }
+    .pos-cart-panel .pcp-footer { flex-shrink: 0; padding-top: 10px; }
+    .pos-cart-panel .pcp-total-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; font-size: 15px; font-weight: 800; color: var(--text);
+    }
+    .pos-cart-panel .pcp-total-row .pcp-amount { color: var(--cta); font-size: 20px; }
+    .pos-cart-panel .pcp-pay-row { display: flex; gap: 10px; }
+    .pos-cart-panel .pcp-pay-row .btn { padding: 14px; }
+
+    /* จอกว้างมีแผงขวาแทนแล้ว ไม่ต้องมีแถบลอย */
+    .cart-bar { display: none !important; }
+  }
+
   .pos-card {
     position: relative;
     background: var(--surface);
@@ -741,7 +781,7 @@
     box-shadow: 0 2px 6px rgba(230,57,118,0.4);
   }
 
-  /* ── แถบตะกร้าลอย (มุมล่าง) ── */
+  /* ── แถบตะกร้าลอย (มุมล่าง) — ใช้เฉพาะจอแคบ/มือถือ ── */
   .cart-bar {
     display: none;
     position: absolute;
@@ -866,13 +906,14 @@
   .pay-method-btn .pm-label { font-size: 15px; font-weight: 700; color: var(--text); }
   .pay-method-btn .pm-sub { font-size: 12px; color: var(--text-dim); margin-top: 1px; }
 
-  /* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════
      หน้าจ่ายเงิน (คิดเงินทอน / QR) — โครงสร้างร่วม
      ══════════════════════════════════════════════ */
   .pay-page { background: var(--bg); }
   .pay-back-row {
     display: flex; align-items: center; gap: 10px;
     padding: 14px 16px 6px;
+    flex-shrink: 0;
   }
   .pay-back-btn {
     width: 34px; height: 34px; border-radius: 50%;
@@ -880,14 +921,27 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 16px; color: var(--text);
   }
-  .pay-total-box {
-    text-align: center;
-    padding: 18px 16px 10px;
+
+  /* จอ 2 คอลัมน์: ซ้าย = รายการบิล, ขวา = ฟอร์ม/QR */
+  .pay-layout { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; }
+
+  .pay-bill-panel { padding: 4px 20px 10px; flex-shrink: 0; }
+  .pay-bill-panel .pbp-title { font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
+  .pay-bill-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px dashed var(--border);
+    font-size: 13.5px;
   }
+  .pay-bill-line .pbl-name { color: var(--text); font-weight: 600; }
+  .pay-bill-line .pbl-amount { font-weight: 700; color: var(--text); }
+
+  .pay-right { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+  .pay-total-box { text-align: center; padding: 18px 16px 10px; flex-shrink: 0; }
   .pay-total-box .ptb-label { font-size: 13px; color: var(--text-dim); }
   .pay-total-box .ptb-amount { font-size: 38px; font-weight: 800; color: var(--cta); margin-top: 2px; }
 
-  .cash-input-wrap { padding: 6px 20px; }
+  .cash-input-wrap { padding: 6px 20px; flex-shrink: 0; }
   .cash-input-wrap input {
     width: 100%;
     font-size: 26px;
@@ -904,6 +958,7 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
     padding: 12px 20px;
+    flex-shrink: 0;
   }
   .cash-quick-btn {
     padding: 12px 4px;
@@ -920,11 +975,14 @@
     background: var(--surface2);
     border-radius: var(--radius);
     text-align: center;
+    flex-shrink: 0;
   }
   .cash-change-box .ccb-label { font-size: 13px; color: var(--text-dim); }
   .cash-change-box .ccb-amount { font-size: 26px; font-weight: 800; color: var(--paid-green); margin-top: 2px; }
   .cash-change-box.insufficient .ccb-amount { color: var(--danger); }
-  .pay-confirm-row { padding: 10px 20px 20px; margin-top: auto; }
+
+  .pay-confirm-row { padding: 10px 20px 20px; margin-top: auto; display: flex; gap: 10px; flex-shrink: 0; }
+  .pay-confirm-row .btn { flex: 1; }
 
   .qr-box {
     margin: 10px auto 6px;
@@ -935,8 +993,20 @@
     box-shadow: 0 2px 10px rgba(0,0,0,0.08);
   }
   .qr-box svg { display: block; width: 100%; height: auto; }
-  .qr-hint { text-align: center; font-size: 12.5px; color: var(--text-dim); padding: 0 24px; margin-top: 4px; }
+  .qr-hint { text-align: center; font-size: 12.5px; color: var(--text-dim); padding: 0 24px; }
   .qr-not-setup { text-align: center; padding: 40px 24px; color: var(--text-dim); font-size: 14px; }
+
+  @media (min-width: 860px) {
+    .pay-layout { flex-direction: row; overflow-y: hidden; }
+    .pay-bill-panel {
+      width: 320px;
+      flex-shrink: 0;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+      padding: 8px 20px 20px;
+    }
+    .pay-right { flex: 1; overflow-y: auto; }
+  }
 
   /* ══════════════════════════════════════════════
      หน้า PAID
@@ -951,8 +1021,15 @@
   }
   .paid-title { font-size: 19px; font-weight: 800; color: var(--text); }
   .paid-amount { font-size: 30px; font-weight: 800; color: var(--text); margin-top: 4px; }
-  .paid-sub { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
-  .paid-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px; margin-top: 26px; }
+  .paid-sub { font-size: 13px; color: var(--text-dim); margin-top: 2px; }.paid-countdown {
+    margin-top: 22px;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800; color: var(--text-dim);
+  }
+  .paid-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px; margin-top: 16px; }  .paid-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px; margin-top: 26px; }
 
   /* ══════════════════════════════════════════════
      ใบเสร็จ / ประวัติการขาย / สรุปยอด
