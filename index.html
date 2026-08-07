@@ -543,7 +543,35 @@
     justify-content: center;
     border: 2px solid transparent;
   }
-  .icon-choice.selected { border-color: var(--accent); background: rgba(22,163,74,0.1); }
+ .icon-choice.selected { border-color: var(--accent); background: rgba(22,163,74,0.1); }
+
+  /* ── รูปสินค้า (แทนระบบอีโมจิ) ── */
+  .image-upload-box {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 140px;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    color: var(--text-dim);
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+  }
+  .image-upload-box:active { background: var(--surface2); }
+  .image-preview-wrap { position: relative; width: 140px; height: 140px; margin: 0 auto; }
+  .image-preview { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius); }
+  .image-remove-btn {
+    position: absolute; top: -8px; right: -8px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--danger); color: #fff; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
+  .item-icon img, .pos-card-icon img, .cl-icon img {
+    width: 100%; height: 100%; object-fit: cover; border-radius: inherit;
+  }
+  .thumb-fallback {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: var(--text-dim); border-radius: inherit; background: var(--surface2);
+  }
 
   .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
   .btn {
@@ -1479,9 +1507,11 @@
       <input type="text" class="form-input" id="input-product-name" placeholder="เช่น แว่นกันแดดลาย A">
     </div>
 
-    <div class="form-group">
-      <label class="form-label">ไอคอนสินค้า</label>
-      <div class="icon-row" id="product-icon-choice-row"></div>
+<div class="form-group">
+      <label class="form-label">รูปสินค้า</label>
+      <div id="product-image-picker"></div>
+      <input type="file" accept="image/*" id="input-product-image-file"
+        style="display:none" onchange="handleProductImageFile(this)">
     </div>
 
     <div class="form-group">
@@ -1986,6 +2016,15 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+/** คืน HTML สำหรับแสดงรูปสินค้า ถ้าไม่มีรูปจะโชว์ตัวอักษรแรกของชื่อแทน */
+function productThumbHtml(p) {
+  if (p && p.image) {
+    return `<img src="${p.image}" alt="">`;
+  }
+  const initial = (p && p.name ? p.name.trim().charAt(0) : '?').toUpperCase();
+  return `<div class="thumb-fallback">${escapeHtml(initial)}</div>`;
 }
 
 function renderTopNav() {
@@ -2609,7 +2648,7 @@ async function deleteOwnerConfirm(id) {
 
 let _editingProductId = null;
 let _editingProductData = null;
-let _pendingProductIcon = ICON_OPTIONS[0];
+let _pendingProductImage = null;
 let _pendingProductOwnerId = null;
 let _productRecipeLines = [];     // [{ _lineUid, materialId, qty }]
 let _productModalMaterials = [];  // cache วัตถุดิบทั้งหมด ตอนเปิดฟอร์มสินค้า
@@ -2644,9 +2683,9 @@ async function renderProductsList() {
       const owner = owners.find(o => o.id === p.ownerId);
       const profitClass = p.profit >= 0 ? 'positive' : 'negative';
       const stockText = p.stockEnabled ? `คงเหลือ ${fmt(p.stock)}` : 'ไม่จำกัดสต็อก';
-      return `
+return `
         <div class="item-card">
-          <div class="item-icon" style="background:var(--surface2);">${p.icon}</div>
+          <div class="item-icon">${productThumbHtml(p)}</div>
           <div class="item-main" onclick="openEditProductModal('${p.id}')">
             <div class="item-name">${escapeHtml(p.name)}</div>
             ${owner ? `<div class="item-owner-tag">${owner.icon} ${escapeHtml(owner.name)}</div>` : ''}
@@ -2674,7 +2713,7 @@ async function loadProductModalRefData() {
 async function openCreateProductModal() {
   _editingProductId = null;
   _editingProductData = null;
-  _pendingProductIcon = ICON_OPTIONS[0];
+  _pendingProductImage = null;
   _pendingProductOwnerId = null;
   _productRecipeLines = [];
 
@@ -2687,7 +2726,7 @@ async function openCreateProductModal() {
   toggleProductStockQtyVisibility();
 
   await loadProductModalRefData();
-  renderProductIconRow();
+  renderProductImagePicker();
   renderProductOwnerChips();
   renderProductRecipeLines();
 
@@ -2701,7 +2740,7 @@ async function openEditProductModal(id) {
 
   _editingProductId = id;
   _editingProductData = p;
-  _pendingProductIcon = p.icon;
+  _pendingProductImage = p.image || null;
   _pendingProductOwnerId = p.ownerId;
   _productRecipeLines = (p.recipeLines || []).map(l => ({
     _lineUid: uid(), materialId: l.materialId, qty: l.qty
@@ -2716,7 +2755,7 @@ async function openEditProductModal(id) {
   toggleProductStockQtyVisibility();
 
   await loadProductModalRefData();
-  renderProductIconRow();
+  renderProductImagePicker();
   renderProductOwnerChips();
   renderProductRecipeLines();
 
@@ -2728,18 +2767,53 @@ function toggleProductStockQtyVisibility() {
   document.getElementById('product-stock-qty-group').style.display = enabled ? 'block' : 'none';
 }
 
-/* ── ไอคอนสินค้า ── */
-function renderProductIconRow() {
-  const row = document.getElementById('product-icon-choice-row');
-  row.innerHTML = ICON_OPTIONS.map(icon => `
-    <button class="icon-choice ${icon === _pendingProductIcon ? 'selected' : ''}"
-      data-icon="${icon}" onclick="pickProductIcon('${icon}', this)">${icon}</button>
-  `).join('');
+/* ── รูปสินค้า ── */
+function renderProductImagePicker() {
+  const box = document.getElementById('product-image-picker');
+  if (!box) return;
+  if (_pendingProductImage) {
+    box.innerHTML = `
+      <div class="image-preview-wrap">
+        <img src="${_pendingProductImage}" class="image-preview" alt="">
+        <button type="button" class="image-remove-btn" onclick="removeProductImage()">✕</button>
+      </div>`;
+  } else {
+    box.innerHTML = `
+      <label class="image-upload-box" for="input-product-image-file">+ เพิ่มรูปสินค้า</label>`;
+  }
 }
-function pickProductIcon(icon, btnEl) {
-  _pendingProductIcon = icon;
-  document.querySelectorAll('#product-icon-choice-row .icon-choice').forEach(el => el.classList.remove('selected'));
-  btnEl.classList.add('selected');
+
+/** อ่านไฟล์รูป ย่อขนาดให้ไม่เกิน 500px ก่อนแปลงเป็น base64 เพื่อไม่ให้ฐานข้อมูลบวม */
+function handleProductImageFile(inputEl) {
+  const file = inputEl.files && inputEl.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const maxSize = 500;
+      let w = img.width, h = img.height;
+      if (w > h && w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; }
+      else if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+      _pendingProductImage = canvas.toDataURL('image/jpeg', 0.82);
+      renderProductImagePicker();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  inputEl.value = '';
+}
+
+function removeProductImage() {
+  _pendingProductImage = null;
+  renderProductImagePicker();
 }
 
 /* ── เจ้าของสินค้า (chip, บังคับเลือก, มีปุ่มเพิ่มเจ้าของเสมอ) ── */
@@ -2893,10 +2967,10 @@ async function submitProduct() {
     .filter(l => l.materialId && l.qty)
     .map(l => ({ materialId: l.materialId, qty: parseFloat(l.qty) }));
 
-  const record = {
+const record = {
     id: _editingProductId || uid(),
     name,
-    icon: _pendingProductIcon,
+    image: _pendingProductImage,
     ownerId: _pendingProductOwnerId,
     recipeLines,
     manualCost: recipeLines.length > 0 ? null : cost,
@@ -3003,10 +3077,10 @@ function renderPOSGrid() {
     const outOfStock = p.stockEnabled && p.stock <= 0;
     const atMax = p.stockEnabled && inCart >= p.stock;
     const disabled = outOfStock || atMax;
-    return `
+  return `
       <button class="pos-card ${disabled ? 'disabled' : ''}" onclick="addToCart('${p.id}')">
         ${inCart > 0 ? `<div class="pos-card-qty-badge">${inCart}</div>` : ''}
-        <div class="pos-card-icon">${p.icon}</div>
+        <div class="pos-card-icon">${productThumbHtml(p)}</div>
         <div class="pos-card-name">${escapeHtml(p.name)}</div>
         <div class="pos-card-price">${fmt(p.price)} บ.</div>
         ${p.stockEnabled ? `<div class="pos-card-stock">เหลือ ${fmt(p.stock)}</div>` : ''}
@@ -3065,9 +3139,9 @@ function renderCartSheet() {
       const p = _posProducts.find(x => x.id === pid);
       if (!p) return '';
       const subtotal = p.price * qty;
-      return `
+     return `
         <div class="cart-line">
-          <div class="cl-icon">${p.icon}</div>
+          <div class="cl-icon">${productThumbHtml(p)}</div>
           <div class="cl-main">
             <div class="cl-name">${escapeHtml(p.name)}</div>
             <div class="cl-unit-price">${fmt(p.price)} บ. / ชิ้น</div>
@@ -3141,7 +3215,7 @@ function renderPOSCartPanel() {
       const subtotal = p.price * qty;
       return `
         <div class="cart-line">
-          <div class="cl-icon">${p.icon}</div>
+          <div class="cl-icon">${productThumbHtml(p)}</div>
           <div class="cl-main">
             <div class="cl-name">${escapeHtml(p.name)}</div>
             <div class="cl-unit-price">${fmt(p.price)} บ. / ชิ้น</div>
@@ -3552,7 +3626,7 @@ function renderPayBillLines(containerId) {
     if (!p) return '';
     return `
       <div class="pay-bill-line">
-        <span class="pbl-name">${p.icon} ${escapeHtml(p.name)} × ${qty}</span>
+      <span class="pbl-name">${escapeHtml(p.name)} × ${qty}</span>
         <span class="pbl-amount">${fmt(p.price * qty)} บ.</span>
       </div>`;
   }).join('');
@@ -3754,10 +3828,10 @@ async function finalizeSale(method, extra) {
 
   const items = entries.map(([pid, qty]) => {
     const p = _posProducts.find(x => x.id === pid);
-    return {
+return {
       productId: pid,
       name: p ? p.name : 'สินค้า',
-      icon: p ? p.icon : '🛍️',
+      image: p ? p.image : null,
       price: p ? p.price : 0,
       qty,
       subtotal: (p ? p.price : 0) * qty,
@@ -3889,7 +3963,7 @@ function renderReceiptPage(sale) {
     return `
       <div class="receipt-line ${fullyRefunded ? 'refunded' : ''}">
         <div>
-          <div class="rl-name">${it.icon} ${escapeHtml(it.name)} × ${it.qty}</div>
+         <div class="rl-name">${escapeHtml(it.name)} × ${it.qty}</div>
           ${it.refundedQty > 0 ? `<div class="rl-sub">คืนแล้ว ${it.refundedQty} ชิ้น</div>` : ''}
         </div>
         <div class="rl-amount">${fmt(it.subtotal)} บ.</div>
@@ -3938,7 +4012,7 @@ function renderRefundLines() {
     if (remaining <= 0) return '';
     return `
       <div class="refund-qty-row">
-        <div class="rq-main">${it.icon} ${escapeHtml(it.name)}<br><span style="color:var(--text-dim); font-size:11.5px;">คืนได้สูงสุด ${remaining} ชิ้น</span></div>
+   <div class="rq-main">${escapeHtml(it.name)}<br><span style="color:var(--text-dim); font-size:11.5px;">คืนได้สูงสุด ${remaining} ชิ้น</span></div>
         <div class="rq-stepper">
           <button onclick="adjustRefundQty('${it.productId}', -1)">−</button>
           <div style="min-width:18px; text-align:center; font-weight:700;">${selected}</div>
