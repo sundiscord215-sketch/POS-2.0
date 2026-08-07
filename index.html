@@ -597,25 +597,21 @@
   /* ══════════════════════════════════════════════
      SETTINGS FAB + SLIDING PANEL
      ══════════════════════════════════════════════ */
-  #settings-fab {
+#settings-fab {
     display: none;
-    position: fixed;
-    left: 20px;
-    bottom: 24px;
-    width: 56px;
-    height: 56px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    color: var(--text);
-    font-size: 24px;
+    background: var(--surface2);
+    border: none;
+    color: var(--text-dim);
+    font-size: 15px;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.14);
-    z-index: 40;
+    margin-left: auto;
+    flex-shrink: 0;
   }
   #settings-fab.show { display: flex; }
-
   #settings-panel {
     position: fixed;
     inset: 0;
@@ -1186,12 +1182,13 @@
 
   <!-- TOP NAV: โชว์ร้านปัจจุบัน (ซ่อนถ้ายังไม่มีร้าน active)
        แตะได้: จากหน้าขาย -> ไปหน้าจัดการร้าน (สลับ/สร้างร้าน), จากหน้าอื่น -> กลับไปหน้าขาย -->
-  <div id="topnav" onclick="handleTopNavTap()" style="cursor:pointer;">
+<div id="topnav" onclick="handleTopNavTap()" style="cursor:pointer;">
     <div class="tn-badge" id="tn-badge">🏪</div>
     <div class="tn-text">
       <div class="tn-name" id="tn-name">—</div>
       <div class="tn-code" id="tn-code">—</div>
     </div>
+    <button id="settings-fab" onclick="event.stopPropagation(); openSettingsPanel();">⚙️</button>
   </div>
 
   <!-- ══════════════════════════════════════════════
@@ -1409,8 +1406,7 @@
 
   <!-- page อื่นๆ (P2P, ฝั่งพนักงาน ฯลฯ) จะเพิ่มในบล็อคถัดไป -->
 
-  <!-- ปุ่มตั้งค่าลอย มุมซ้ายล่าง — โผล่ทุกหน้าฝั่งร้านค้าที่ล็อกอินโหมดแล้ว -->
-  <button id="settings-fab" onclick="openSettingsPanel()">⚙️</button>
+ 
 
   <div id="toast-container"></div>
 
