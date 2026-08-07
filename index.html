@@ -752,11 +752,80 @@
       padding: 10px 0; font-size: 15px; font-weight: 800; color: var(--text);
     }
     .pos-cart-panel .pcp-total-row .pcp-amount { color: var(--cta); font-size: 20px; }
-    .pos-cart-panel .pcp-pay-row { display: flex; gap: 10px; }
+.pos-cart-panel .pcp-pay-row { display: flex; gap: 10px; }
     .pos-cart-panel .pcp-pay-row .btn { padding: 14px; }
 
     /* จอกว้างมีแผงขวาแทนแล้ว ไม่ต้องมีแถบลอย */
     .cart-bar { display: none !important; }
+
+    /* ── รายการในแผงตะกร้าขวา แบบกระชับ (ไม่มีไอคอน) ── */
+    .pcp-line {
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .pcp-line:last-child { border-bottom: none; }
+    .pcp-line .pcp-line-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .pcp-line .pcp-line-name {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text);
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pcp-line .pcp-line-subtotal {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+    .pcp-line .pcp-line-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+    }
+    .pcp-line .pcp-line-unit {
+      font-size: 11.5px;
+      color: var(--text-dim);
+    }
+    .pcp-line .pcp-line-stepper { display: flex; align-items: center; gap: 6px; }
+    .pcp-line .pcp-line-stepper button {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pcp-line .pcp-line-stepper .pcp-line-qty {
+      min-width: 14px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 12.5px;
+    }
+    .pcp-line .pcp-line-remove {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      color: var(--danger);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
   }
 
 .pos-card {
@@ -3241,19 +3310,22 @@ function renderPOSCartPanel() {
       if (!p) return '';
       const subtotal = p.price * qty;
       return `
-        <div class="cart-line">
-          <div class="cl-icon">${productThumbHtml(p)}</div>
-          <div class="cl-main">
-            <div class="cl-name">${escapeHtml(p.name)}</div>
-            <div class="cl-unit-price">${fmt(p.price)} บ. / ชิ้น</div>
+        <div class="pcp-line">
+          <div class="pcp-line-top">
+            <div class="pcp-line-name">${escapeHtml(p.name)}</div>
+            <div class="pcp-line-subtotal">${fmt(subtotal)} บ.</div>
           </div>
-          <div class="cl-stepper">
-            <button onclick="decrementCartLine('${pid}')">−</button>
-            <div class="cl-qty">${qty}</div>
-            <button onclick="addToCart('${pid}')">+</button>
+          <div class="pcp-line-bottom">
+            <div class="pcp-line-unit">${qty} × ${fmt(p.price)} บ.</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div class="pcp-line-stepper">
+                <button onclick="decrementCartLine('${pid}')">−</button>
+                <div class="pcp-line-qty">${qty}</div>
+                <button onclick="addToCart('${pid}')">+</button>
+              </div>
+              <button class="pcp-line-remove" onclick="removeCartLine('${pid}')">🗑</button>
+            </div>
           </div>
-          <div class="cl-subtotal">${fmt(subtotal)} บ.</div>
-          <button class="cl-remove" onclick="removeCartLine('${pid}')">🗑</button>
         </div>
       `;
     }).join('');
