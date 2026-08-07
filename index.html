@@ -1203,59 +1203,99 @@
     <button class="sm-fab" onclick="openCreateProductModal()">+</button>
   </div>
 
-  <!-- ══════════════════════════════════════════════
+<!-- ══════════════════════════════════════════════
        PAGE: ขาย (POS) หลัก
        ══════════════════════════════════════════════ -->
   <div id="page-pos" class="page">
-    <div class="pos-grid" id="pos-product-grid">
-      <!-- render โดย renderPOSGrid() -->
+    <div class="pos-layout">
+      <div class="pos-left">
+        <div class="pos-grid" id="pos-product-grid">
+          <!-- render โดย renderPOSGrid() -->
+        </div>
+      </div>
+
+      <!-- แผงตะกร้าขวา — จอกว้างเท่านั้น (โชว์ตลอด) -->
+      <div class="pos-cart-panel" id="pos-cart-panel">
+        <div class="pcp-title">ตะกร้าสินค้า</div>
+        <div class="pcp-lines" id="pcp-lines">
+          <!-- render โดย renderPOSCartPanel() -->
+        </div>
+        <div class="pcp-footer">
+          <div class="pcp-total-row">
+            <span>ยอดรวม</span>
+            <span class="pcp-amount" id="pcp-total-amount">0 บ.</span>
+          </div>
+          <div class="pcp-pay-row">
+            <button class="btn btn-secondary" id="pcp-cash-btn" onclick="goToCashPage()">💵 เงินสด</button>
+            <button class="btn btn-primary" id="pcp-qr-btn" onclick="goToQRPage()">📱 QR</button>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- แถบตะกร้าลอย — จอแคบ/มือถือเท่านั้น -->
     <button class="cart-bar" id="cart-bar" onclick="openCartSheet()">
       <span class="cart-bar-count" id="cart-bar-count">0</span>
       <span class="cart-bar-label">ตะกร้า</span>
       <span class="cart-bar-total" id="cart-bar-total">0 บ.</span>
     </button>
   </div>
-
-  <!-- ══════════════════════════════════════════════
+<!-- ══════════════════════════════════════════════
        PAGE: คิดเงินทอน (เงินสด)
        ══════════════════════════════════════════════ -->
   <div id="page-pay-cash" class="page pay-page">
     <div class="pay-back-row">
       <button class="pay-back-btn" onclick="switchPage('page-pos')">←</button>
     </div>
-    <div class="pay-total-box">
-      <div class="ptb-label">ยอดที่ต้องชำระ</div>
-      <div class="ptb-amount" id="cash-total-amount">0 บ.</div>
-    </div>
-    <div class="cash-input-wrap">
-      <input type="number" inputmode="decimal" id="cash-received-input" placeholder="รับเงินมา (บาท)" oninput="renderCashChange()">
-    </div>
-    <div class="cash-quick-row" id="cash-quick-row"><!-- render โดย renderCashQuickButtons() --></div>
-    <div class="cash-change-box" id="cash-change-box">
-      <div class="ccb-label">เงินทอน</div>
-      <div class="ccb-amount" id="cash-change-amount">0 บ.</div>
-    </div>
-    <div class="pay-confirm-row">
-      <button class="btn btn-primary" id="cash-confirm-btn" style="width:100%;" onclick="confirmCashPayment()">ยืนยันรับเงิน</button>
+    <div class="pay-layout">
+      <div class="pay-bill-panel">
+        <div class="pbp-title">รายการสินค้า</div>
+        <div id="cash-bill-lines"><!-- render โดย renderPayBillLines() --></div>
+      </div>
+      <div class="pay-right">
+        <div class="pay-total-box">
+          <div class="ptb-label">ยอดที่ต้องชำระ</div>
+          <div class="ptb-amount" id="cash-total-amount">0 บ.</div>
+        </div>
+        <div class="cash-input-wrap">
+          <input type="number" inputmode="decimal" id="cash-received-input" placeholder="รับเงินมา (บาท)" oninput="renderCashChange()">
+        </div>
+        <div class="cash-quick-row" id="cash-quick-row"><!-- render โดย renderCashQuickButtons() --></div>
+        <div class="cash-change-box" id="cash-change-box">
+          <div class="ccb-label">เงินทอน</div>
+          <div class="ccb-amount" id="cash-change-amount">0 บ.</div>
+        </div>
+        <div class="pay-confirm-row">
+          <button class="btn btn-secondary" onclick="switchPage('page-pos')">ยกเลิก</button>
+          <button class="btn btn-primary" id="cash-confirm-btn" onclick="confirmCashPayment()">ยืนยันรับเงิน</button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════
+<!-- ══════════════════════════════════════════════
        PAGE: จ่าย QR (พร้อมเพย์)
        ══════════════════════════════════════════════ -->
   <div id="page-pay-qr" class="page pay-page">
     <div class="pay-back-row">
       <button class="pay-back-btn" onclick="switchPage('page-pos')">←</button>
     </div>
-    <div class="pay-total-box">
-      <div class="ptb-label">ยอดที่ต้องชำระ</div>
-      <div class="ptb-amount" id="qr-total-amount">0 บ.</div>
+    <div class="pay-layout">
+      <div class="pay-bill-panel">
+        <div class="pbp-title">รายการสินค้า</div>
+        <div id="qr-bill-lines"><!-- render โดย renderPayBillLines() --></div>
+      </div>
+      <div class="pay-right">
+        <div class="pay-total-box">
+          <div class="ptb-label">ยอดที่ต้องชำระ</div>
+          <div class="ptb-amount" id="qr-total-amount">0 บ.</div>
+        </div>
+        <div id="qr-page-body"><!-- render โดย renderQRPage() --></div>
+      </div>
     </div>
-    <div id="qr-page-body"><!-- render โดย renderQRPage() --></div>
   </div>
 
-  <!-- ══════════════════════════════════════════════
+<!-- ══════════════════════════════════════════════
        PAGE: PAID (ชำระสำเร็จ)
        ══════════════════════════════════════════════ -->
   <div id="page-paid" class="page paid-page">
@@ -1263,9 +1303,9 @@
     <div class="paid-title">ชำระเงินสำเร็จ</div>
     <div class="paid-amount" id="paid-amount">0 บ.</div>
     <div class="paid-sub" id="paid-sub"></div>
+    <div class="paid-countdown" id="paid-countdown">3</div>
     <div class="paid-actions">
       <button class="btn btn-primary" onclick="goToReceiptPage(_lastSaleId, true)">🧾 ดูใบเสร็จ</button>
-      <button class="btn btn-secondary" onclick="startNewSale()">+ ทำรายการใหม่</button>
     </div>
   </div>
 
