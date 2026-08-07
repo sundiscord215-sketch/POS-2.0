@@ -1247,17 +1247,19 @@
 
 <div id="app">
 
- <div id="topnav" onclick="handleTopNavTap()" style="cursor:pointer;">
-    <div class="tn-badge" id="tn-badge">🏪</div>
-    <div class="tn-text">
-      <div class="tn-name" id="tn-name">—</div>
-      <div class="tn-code" id="tn-code">—</div>
-      <div id="conn-status" class="offline">
-        <span class="dot"></span>
-        <span class="label">ออฟไลน์</span>
+ <div id="topnav">
+    <div class="tn-tap-area" onclick="handleTopNavTap()" style="cursor:pointer; display:flex; align-items:center; gap:10px; min-width:0;">
+      <div class="tn-badge" id="tn-badge">🏪</div>
+      <div class="tn-text">
+        <div class="tn-name" id="tn-name">—</div>
+        <div class="tn-code" id="tn-code">—</div>
+        <div id="conn-status" class="offline">
+          <span class="dot"></span>
+          <span class="label">ออฟไลน์</span>
+        </div>
       </div>
     </div>
-    <button id="settings-fab" onclick="event.stopPropagation(); openSettingsPanel();">⚙️</button>
+    <button id="settings-fab" onclick="openSettingsPanel();">⚙️</button>
   </div>
 
   <!-- ══════════════════════════════════════════════
