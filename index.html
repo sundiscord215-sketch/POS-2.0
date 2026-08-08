@@ -1617,13 +1617,13 @@
   </div>
 
   <!-- ══════════════════════════════════════════════
-       PAGE: พนักงาน — กรอก/สแกน รหัสห้อง
+       PAGE: พนักงาน — กรอก/สแกน code
        ══════════════════════════════════════════════ -->
   <div id="page-employee-join" class="page" style="align-items:center; justify-content:center; padding:24px; background:var(--bg);">
     <div class="ms-logo">เข้าร้าน</div>
-    <div class="ms-sub" id="employee-join-sub">กรอกรหัสห้องที่ได้จากเจ้าของร้าน</div>
+    <div class="ms-sub" id="employee-join-sub">กรอกcodeที่ได้จากเจ้าของร้าน</div>
     <div class="form-group" style="width:100%; max-width:320px;">
-      <input type="text" class="form-input" id="input-join-room-code" placeholder="รหัสห้อง 6 หลัก" style="text-transform:uppercase; letter-spacing:2px; text-align:center; font-weight:700;">
+      <input type="text" class="form-input" id="input-join-room-code" placeholder="code 6 หลัก" style="text-transform:uppercase; letter-spacing:2px; text-align:center; font-weight:700;">
     </div>
     <button class="btn btn-primary" style="width:100%; max-width:320px;" id="employee-join-btn" onclick="submitJoinRoom()">เข้าร้าน</button>
     <button class="btn btn-secondary" style="width:100%; max-width:320px; margin-top:10px;" onclick="switchPage('page-mode-selector')">← กลับ</button>
@@ -1794,7 +1794,7 @@
     </div>
 
     <div class="form-group">
-      <label class="form-label">รหัสห้อง (สุ่มอัตโนมัติ แก้ไขไม่ได้)</label>
+      <label class="form-label">code (สุ่มอัตโนมัติ แก้ไขไม่ได้)</label>
       <input type="text" class="form-input" id="input-room-code" readonly>
     </div>
 
@@ -2174,7 +2174,7 @@ function setActiveRoomCode(roomCode) {
 
 
 /* ══════════════════════════════════════════════════════════════
-   DB LAYER (IndexedDB) — แยกฐานข้อมูลต่อร้านตาม "รหัสห้อง"
+   DB LAYER (IndexedDB) — แยกฐานข้อมูลต่อร้านตาม "code"
    ชื่อ DB: pos-db-{roomCode}
    ══════════════════════════════════════════════════════════════ */
 
@@ -2190,7 +2190,7 @@ function dbName(roomCode) {
 }
 
 /**
- * เปิด (หรือสร้าง) IndexedDB ของร้านตามรหัสห้อง
+ * เปิด (หรือสร้าง) IndexedDB ของร้านตามcode
  * ต้องเรียกทุกครั้งที่สลับร้าน (active room เปลี่ยน)
  */
 function initDB(roomCode) {
@@ -2365,7 +2365,7 @@ function initPeerHost(roomCode, onEmployeeConnected, onEmployeeDisconnected) {
   _peer.on('error', (err) => {
     console.error('[peer] host peer error', err);
     if (err.type === 'unavailable-id') {
-      showToast('รหัสห้องนี้กำลังถูกใช้งานจากเครื่องอื่นอยู่');
+      showToast('codeนี้กำลังถูกใช้งานจากเครื่องอื่นอยู่');
     }
   });
 
@@ -2491,7 +2491,7 @@ function routeAfterModeSelect(mode) {
   }
 }
 
-/** ตัดสินใจว่าพนักงานควรเจอหน้าไหนก่อน: กรอกชื่อ → กรอกรหัสห้อง → เข้าหน้าขายเลย (ถ้าเคย join ไว้แล้ว) */
+/** ตัดสินใจว่าพนักงานควรเจอหน้าไหนก่อน: กรอกชื่อ → กรอกcode → เข้าหน้าขายเลย (ถ้าเคย join ไว้แล้ว) */
 function routeEmployeeFlow() {
   if (!getEmployeeName()) {
     switchPage('page-employee-name');
@@ -2522,7 +2522,7 @@ async function submitJoinRoom() {
   const input = document.getElementById('input-join-room-code');
   const roomCode = input.value.trim().toUpperCase();
   if (!roomCode) {
-    showToast('กรุณากรอกรหัสห้อง');
+    showToast('กรุณากรอกcode');
     input.focus();
     return;
   }
@@ -2569,7 +2569,7 @@ const ICON_OPTIONS = ['🏪', '👓', '🍬', '👕', '🎮', '🎨', '📚', '�
 let _pendingStoreColor = COLOR_PALETTE[0];
 let _pendingStoreIcon = ICON_OPTIONS[0];
 
-/** สุ่มรหัสห้อง 6 ตัว ผสมตัวอักษรพิมพ์ใหญ่ + ตัวเลข */
+/** สุ่มcode 6 ตัว ผสมตัวอักษรพิมพ์ใหญ่ + ตัวเลข */
 function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // ตัด O/0/I/1 กันสับสน
   let code = '';
@@ -2594,7 +2594,7 @@ function renderStoreList() {
       <div class="sc-icon" style="background:${store.color}22;">${store.icon}</div>
       <div class="sc-main" onclick="selectStore('${store.roomCode}')">
         <div class="sc-name">${escapeHtml(store.name)}</div>
-        <div class="sc-code">รหัสห้อง ${store.roomCode}</div>
+        <div class="sc-code">code ${store.roomCode}</div>
         ${store.roomCode === activeRoom ? '<div class="sc-active-tag">● กำลังใช้งาน</div>' : ''}
       </div>
       <button class="sc-delete" onclick="deleteStoreConfirm('${store.roomCode}')">🗑</button>
@@ -2632,7 +2632,7 @@ function renderTopNav() {
   document.getElementById('tn-badge').textContent = store.icon;
   document.getElementById('tn-badge').style.background = store.color + '22';
   document.getElementById('tn-name').textContent = store.name;
-  document.getElementById('tn-code').textContent = `รหัสห้อง ${store.roomCode}`;
+  document.getElementById('tn-code').textContent = `code ${store.roomCode}`;
 }
 
 /** แตะแถบบนสุด (โชว์ร้าน active) — สลับไปมาระหว่างหน้าขาย กับ หน้าจัดการร้าน */
