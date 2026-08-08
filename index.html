@@ -1345,11 +1345,13 @@
   .summary-card .sc-value { font-size: 30px; font-weight: 800; color: var(--text); margin-top: 4px; font-variant-numeric: tabular-nums; }
   .summary-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .summary-owner-row {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: space-between; align-items: flex-start;
     padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13.5px;
+    gap: 12px;
   }
-  .summary-owner-row .so-name { color: var(--text); font-weight: 600; flex: 1; min-width: 0; }
+  .summary-owner-row .so-name { color: var(--text); font-weight: 600; flex: 1; min-width: 0; padding-top: 1px; }
   .summary-owner-row .so-amount { color: var(--text); font-weight: 700; flex-shrink: 0; text-align: right; }
+  .summary-owner-row .so-profit { font-size: 11px; font-weight: 700; margin-top: 2px; }
   .summary-owner-row .so-profit { font-size: 11px; font-weight: 700; margin-top: 2px; }
   .summary-payment-bar-track { height: 8px; background: var(--surface2); border-radius: 999px; overflow: hidden; margin-top: 5px; }
   .summary-payment-bar-fill { height: 100%; background: var(--accent); border-radius: 999px; }
@@ -6031,7 +6033,7 @@ async function renderSummaryPage() {
       const name = owner ? owner.name : 'ไม่ระบุเจ้าของ';
       const profit = data.revenue - data.cost;
       const profitColor = profit >= 0 ? 'var(--accent)' : 'var(--danger)';
-     return `
+    return `
         <div class="summary-owner-row">
           <span class="so-name">${escapeHtml(name)}</span>
           <span class="so-amount">
