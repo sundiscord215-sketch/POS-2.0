@@ -1230,7 +1230,7 @@
   /* ══════════════════════════════════════════════
      หน้า PAID
      ══════════════════════════════════════════════ */
-  .paid-page { background: var(--bg); flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; gap: 4px; }
+  .paid-page { background: var(--bg); flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; gap: 4px; position: relative; }
   .paid-icon {
     width: 84px; height: 84px; border-radius: 50%;
     background: var(--paid-green);
@@ -1560,7 +1560,7 @@
 <!-- ══════════════════════════════════════════════
        PAGE: PAID (ชำระสำเร็จ)
        ══════════════════════════════════════════════ -->
- <div id="page-paid" class="page paid-page">
+<div id="page-paid" class="page paid-page">
     <div class="sub-page-header" style="position:absolute; top:0; left:0; right:0; border-bottom:none; background:transparent;">
       <div style="flex:1;"></div>
       <button class="pay-back-btn" onclick="goToReceiptPage(_lastSaleId, true)" title="ดูใบเสร็จ">🧾</button>
@@ -1571,7 +1571,6 @@
     <div class="paid-sub" id="paid-sub"></div>
     <div class="paid-countdown" id="paid-countdown">3</div>
   </div>
-
   <!-- ══════════════════════════════════════════════
        PAGE: ใบเสร็จ (รายละเอียดบิล + คืนเงิน)
        ══════════════════════════════════════════════ -->
@@ -2132,11 +2131,27 @@ const PAGES_WITHOUT_TOPNAV = new Set([
   'page-employee-name', 'page-employee-join', 'page-employee-pos', 'page-employee-receipts'
 ]);
 
+const PAGES_WITHOUT_TOPNAV = new Set([
+  'page-mode-selector', 'page-pay-cash', 'page-pay-qr', 'page-paid',
+  'page-receipt', 'page-sales-history', 'page-summary',
+  'page-employee-name', 'page-employee-join', 'page-employee-pos', 'page-employee-receipts'
+]);
+
 function switchPage(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const target = document.getElementById(pageId);
   if (target) target.classList.add('active');
 
+  const topnav = document.getElementById('topnav');
+  const fab = document.getElementById('settings-fab');
+  if (PAGES_WITHOUT_TOPNAV.has(pageId)) {
+    topnav.classList.remove('show');
+    fab.classList.remove('show');
+  } else if (getActiveRoomCode()) {
+    topnav.classList.add('show');
+    fab.classList.add('show');
+  }
+}
   const topnav = document.getElementById('topnav');
   if (PAGES_WITHOUT_TOPNAV.has(pageId)) {
     topnav.classList.remove('show');
