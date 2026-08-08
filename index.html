@@ -5520,7 +5520,6 @@ async function submitRefund() {
 
 function goToSalesHistoryPage() {
   if (!getActiveRoomCode()) { showToast('กรุณาเลือก/สร้างร้านก่อน'); return; }
-  _cameFromSettingsPanel = true;
   openSubPage('page-sales-history');
   renderSalesHistory();
 }
