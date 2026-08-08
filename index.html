@@ -37,6 +37,23 @@
     --tab-h:      52px;
   }
 
+  html[data-theme="dark"] {
+    --bg:         #121214;
+    --surface:    #1c1c1f;
+    --surface2:   #26262a;
+    --border:     #333338;
+    --accent:     #22c55e;
+    --accent2:    #f0975a;
+    --danger:     #f87171;
+    --text:       #f0f0f2;
+    --text-dim:   #9a9aa2;
+    --text-faint: #5c5c63;
+    --cta:        #ec4c85;
+    --cta-dark:   #d63b71;
+    --paid-green: #34d399;
+  }
+  html[data-theme="dark"] .qr-box { background: #fff; } /* QR ต้องขาวเสมอ ไม่งั้นสแกนไม่ได้ */
+
   /* ── RESET ── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; overflow: hidden; touch-action: manipulation; }
@@ -1839,9 +1856,11 @@
         </div>
         <div class="sp-chevron">›</div>
       </div>
-      <div class="sp-detail">
-        <button class="sp-detail-btn" onclick="closeSettingsPanel(); goToSummaryPage();">📈 สรุปยอดขาย</button>
-        <button class="sp-detail-btn" onclick="closeSettingsPanel(); goToDataPage();">💾 นำเข้า-ส่งออกข้อมูล</button>
+   <div class="sp-detail">
+        <button class="sp-detail-btn" onclick="switchAppMode()">🔁 สลับโหมด (ร้านค้า / พนักงาน)</button>
+        <button class="sp-detail-btn" id="theme-toggle-btn" onclick="toggleDarkTheme()">🌙 ธีมมืด</button>
+
+        <button class="sp-detail-btn danger" onclick="toggleDangerZone()">⚠️ โซนอันตราย</button>
       </div>
     </div>
 
@@ -2246,6 +2265,29 @@ function closeModal(modalId) {
 const STORE_REGISTRY_KEY = 'pos_store_registry';
 const ACTIVE_ROOM_KEY    = 'pos_active_room';
 const MODE_KEY           = 'pos_mode';
+const THEME_KEY          = 'pos_theme';
+
+/** โหลดธีมที่เคยตั้งค่าไว้ทันที ก่อน DOM แสดงผล กันไม่ให้กะพริบเป็นสว่างแวบนึงก่อนสลับมืด */
+function applyStoredTheme() {
+  const theme = localStorage.getItem(THEME_KEY) || 'light';
+  document.documentElement.setAttribute('data-theme', theme);
+}
+applyStoredTheme();
+
+function toggleDarkTheme() {
+  const current = localStorage.getItem(THEME_KEY) || 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem(THEME_KEY, next);
+  document.documentElement.setAttribute('data-theme', next);
+  updateThemeToggleLabel();
+}
+
+function updateThemeToggleLabel() {
+  const btn = document.getElementById('theme-toggle-btn');
+  if (!btn) return;
+  const theme = localStorage.getItem(THEME_KEY) || 'light';
+  btn.textContent = theme === 'dark' ? '☀️ ธีมสว่าง' : '🌙 ธีมมืด';
+}
 
 function getStoreRegistry() {
   try {
@@ -2675,6 +2717,7 @@ function waitForHostConnection(timeoutMs) {
  * จุดเริ่มต้นแอป — เช็คว่าเคยเลือกโหมดไว้หรือยัง
  */
 function bootApp() {
+  updateThemeToggleLabel();
   const savedMode = localStorage.getItem(MODE_KEY);
   if (savedMode) {
     // ข้ามหน้าเลือกโหมดไปเลยตามที่เคยเลือกไว้
