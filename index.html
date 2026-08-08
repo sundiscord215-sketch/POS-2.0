@@ -2543,17 +2543,52 @@ async function submitJoinRoom() {
   }
   const btn = document.getElementById('employee-join-btn');
   btn.disabled = true;
-  document.getElementById('employee-join-sub').textContent = 'กำลังเชื่อมต่อ...';
+  document.getElementById('employee-join-sub').textContent = 'กำลังเปิดฐานข้อมูล...';
 
   const ok = await joinEmployeeRoom(roomCode);
-  btn.disabled = false;
 
   if (!ok) {
+    btn.disabled = false;
     document.getElementById('employee-join-sub').textContent = 'เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง';
     return;
   }
+
+  document.getElementById('employee-join-sub').textContent = 'กำลังเชื่อมต่อกับร้าน... (ตรวจสอบว่า iPad เปิดแอปอยู่หน้าขาย)';
+
+  // รอผลจริงว่าเชื่อมต่อกับ host สำเร็จไหม ภายใน 8 วินาที ก่อนตัดสินใจพาไปหน้าขาย
+  const connected = await waitForHostConnection(8000);
+  btn.disabled = false;
+
+  if (!connected) {
+    document.getElementById('employee-join-sub').textContent =
+      'ยังเชื่อมต่อกับร้านไม่ได้ — ตรวจสอบว่า iPad เปิดแอปค้างไว้ที่หน้า "ขาย" แล้วลองใหม่ (จะยังเข้าหน้าขายได้ แต่สินค้าจะยังไม่ขึ้นจนกว่าจะเชื่อมต่อสำเร็จ)';
+    // ยังพาเข้าหน้าขายได้ เผื่อพนักงานเคยมีข้อมูลสินค้า cache ไว้จากรอบก่อน + ระบบจะ auto-reconnect ต่อเอง
+    switchPage('page-employee-pos');
+    startEmployeeSession(roomCode);
+    return;
+  }
+
   switchPage('page-employee-pos');
   startEmployeeSession(roomCode);
+}
+
+/** รอจนกว่า _hostConn จะเปิดสำเร็จจริง (ไม่ใช่แค่เปิด local DB ได้) ภายในเวลาที่กำหนด */
+function waitForHostConnection(timeoutMs) {
+  return new Promise((resolve) => {
+    const start = Date.now();
+    const check = () => {
+      if (_hostConn && _hostConn.open) {
+        resolve(true);
+        return;
+      }
+      if (Date.now() - start >= timeoutMs) {
+        resolve(false);
+        return;
+      }
+      setTimeout(check, 300);
+    };
+    check();
+  });
 }
 
 /**
