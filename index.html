@@ -4371,6 +4371,7 @@ async function handleCatalogFromHost(payload) {
       await dbPut('categories', c);
     }
     _employeePromptPayId = payload.promptpayId || null;
+    showToast(`ได้รับสินค้าจากร้าน ${payload.products.length} รายการ`);
     // ถ้ากำลังอยู่หน้าขายของพนักงานอยู่ (Block D จะมีฟังก์ชันนี้) ให้รีเฟรชกริดสินค้า
     if (typeof renderEmployeePOSGrid === 'function') {
       _employeeProducts = await dbGetAll('products');
