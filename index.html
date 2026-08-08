@@ -1560,15 +1560,16 @@
 <!-- ══════════════════════════════════════════════
        PAGE: PAID (ชำระสำเร็จ)
        ══════════════════════════════════════════════ -->
-  <div id="page-paid" class="page paid-page">
+ <div id="page-paid" class="page paid-page">
+    <div class="sub-page-header" style="position:absolute; top:0; left:0; right:0; border-bottom:none; background:transparent;">
+      <div style="flex:1;"></div>
+      <button class="pay-back-btn" onclick="goToReceiptPage(_lastSaleId, true)" title="ดูใบเสร็จ">🧾</button>
+    </div>
     <div class="paid-icon">✓</div>
     <div class="paid-title">ชำระเงินสำเร็จ</div>
     <div class="paid-amount" id="paid-amount">0 ฿</div>
     <div class="paid-sub" id="paid-sub"></div>
     <div class="paid-countdown" id="paid-countdown">3</div>
-    <div class="paid-actions">
-      <button class="btn btn-primary" onclick="goToReceiptPage(_lastSaleId, true)">🧾 ดูใบเสร็จ</button>
-    </div>
   </div>
 
   <!-- ══════════════════════════════════════════════
@@ -1585,11 +1586,13 @@
   <!-- ══════════════════════════════════════════════
        PAGE: ประวัติการขาย
        ══════════════════════════════════════════════ -->
-  <div id="page-sales-history" class="page history-page">
+<div id="page-sales-history" class="page history-page">
     <div class="sub-page-header">
       <button class="pay-back-btn" onclick="closeSubPage()">←</button>
       <div class="sph-title">ใบเสร็จทั้งหมด</div>
     </div>
+    <div class="pos-category-filter-row" id="history-seller-filter-row" style="display:flex;"></div>
+    <div class="pos-category-filter-row" id="history-payment-filter-row" style="display:flex;"></div>
     <div class="sub-page-body" id="sales-history-body"><!-- render โดย renderSalesHistory() --></div>
   </div>
 
@@ -5519,6 +5522,18 @@ function goToSalesHistoryPage() {
   renderSalesHistory();
 }
 
+let _historySellerFilter = 'all';
+let _historyPaymentFilter = 'all';
+
+function pickHistorySellerFilter(name) {
+  _historySellerFilter = name;
+  renderSalesHistory();
+}
+function pickHistoryPaymentFilter(method) {
+  _historyPaymentFilter = method;
+  renderSalesHistory();
+}
+
 async function renderSalesHistory() {
   const container = document.getElementById('sales-history-body');
   container.innerHTML = '<div class="sm-empty">กำลังโหลด...</div>';
@@ -5532,12 +5547,48 @@ async function renderSalesHistory() {
   }
   sales.sort((a, b) => b.createdAt - a.createdAt);
 
-  if (sales.length === 0) {
-    container.innerHTML = '<div class="sm-empty">ยังไม่มีรายการขาย</div>';
+  // รายชื่อคนขายทั้งหมดที่เจอในข้อมูล (พนักงานมี employeeName, ขายจาก iPad เอง = "เจ้าของร้าน")
+  const sellerSet = new Set();
+  sales.forEach(s => sellerSet.add(s.employeeName || 'เจ้าของร้าน'));
+  const sellers = ['all', ...Array.from(sellerSet)];
+
+  const sellerRow = document.getElementById('history-seller-filter-row');
+  if (sellers.length <= 2) {
+    // มีคนขายแค่คนเดียว (หรือไม่มีข้อมูล) ไม่ต้องโชว์แถบกรองให้รก
+    sellerRow.style.display = 'none';
+    sellerRow.innerHTML = '';
+  } else {
+    sellerRow.style.display = 'flex';
+    sellerRow.innerHTML = sellers.map(name => `
+      <button type="button" class="pos-filter-chip ${_historySellerFilter === name ? 'selected' : ''}"
+        onclick="pickHistorySellerFilter('${escapeHtml(name).replace(/'/g, "\\'")}')">${name === 'all' ? 'ทุกคน' : escapeHtml(name)}</button>
+    `).join('');
+  }
+
+  const paymentRow = document.getElementById('history-payment-filter-row');
+  const paymentOptions = [
+    { key: 'all', label: 'ทั้งหมด' },
+    { key: 'cash', label: '💵 Cash' },
+    { key: 'qr', label: '📱 QR' },
+  ];
+  paymentRow.style.display = 'flex';
+  paymentRow.innerHTML = paymentOptions.map(opt => `
+    <button type="button" class="pos-filter-chip ${_historyPaymentFilter === opt.key ? 'selected' : ''}"
+      onclick="pickHistoryPaymentFilter('${opt.key}')">${opt.label}</button>
+  `).join('');
+
+  const filtered = sales.filter(s => {
+    const sellerMatch = _historySellerFilter === 'all' || (s.employeeName || 'เจ้าของร้าน') === _historySellerFilter;
+    const paymentMatch = _historyPaymentFilter === 'all' || s.paymentMethod === _historyPaymentFilter;
+    return sellerMatch && paymentMatch;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="sm-empty">ไม่มีรายการขายตามเงื่อนไขนี้</div>';
     return;
   }
 
-  container.innerHTML = sales.map(sale => {
+  container.innerHTML = filtered.map(sale => {
     const dt = new Date(sale.createdAt);
     const timeStr = dt.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' }) +
       ' ' + dt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
@@ -5548,7 +5599,7 @@ async function renderSalesHistory() {
     return `
       <div class="history-item" onclick="goToReceiptPage('${sale.id}', false)">
         <div class="hi-main">
-          <div class="hi-time">${timeStr} · ${sale.paymentMethod === 'cash' ? '💵' : '📱'}</div>
+          <div class="hi-time">${timeStr} · ${sale.paymentMethod === 'cash' ? '💵' : '📱'} · ${escapeHtml(sale.employeeName || 'เจ้าของร้าน')}</div>
           <div class="hi-summary">${itemCount} ชิ้น</div>
         </div>
         ${badge}
