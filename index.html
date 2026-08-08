@@ -2308,13 +2308,14 @@ function routeEmployeeFlow() {
     switchPage('page-employee-name');
     return;
   }
-  const savedRoom = getActiveRoomCode();
+  const savedRoom = getEmployeeRoomCode();
   if (savedRoom) {
     switchPage('page-employee-pos');
     startEmployeeSession(savedRoom);
   } else {
     switchPage('page-employee-join');
   }
+}
 }
 
 function submitEmployeeName() {
@@ -3755,6 +3756,7 @@ async function handleIncomingSale(saleFromEmployee, conn) {
    ══════════════════════════════════════════════════════════════ */
 
 const EMPLOYEE_NAME_KEY = 'pos_employee_name';
+const EMPLOYEE_ROOM_KEY = 'pos_employee_room'; // แยกจาก ACTIVE_ROOM_KEY (ของฝั่งเจ้าของร้าน) โดยเจตนา
 
 function getEmployeeName() {
   return localStorage.getItem(EMPLOYEE_NAME_KEY) || '';
@@ -3764,12 +3766,24 @@ function setEmployeeName(name) {
   localStorage.setItem(EMPLOYEE_NAME_KEY, name.trim());
 }
 
+function getEmployeeRoomCode() {
+  return localStorage.getItem(EMPLOYEE_ROOM_KEY) || null;
+}
+
+function setEmployeeRoomCode(roomCode) {
+  localStorage.setItem(EMPLOYEE_ROOM_KEY, roomCode);
+}
+
+function clearEmployeeRoomCode() {
+  localStorage.removeItem(EMPLOYEE_ROOM_KEY);
+}
+
 /** เรียกตอนพนักงานกรอก/สแกน roomCode สำเร็จ (Block D จะเรียกจาก UI)
  *  เปิด local DB ของมือถือ + เริ่มต่อ P2P ไปหา iPad */
 async function joinEmployeeRoom(roomCode) {
   try {
     await initDB(roomCode);           // สร้าง/เปิด IndexedDB บนมือถือเครื่องนี้ (แยกจาก iPad)
-    setActiveRoomCode(roomCode);      // ใช้ key เดิมร่วมกันได้ เพราะอยู่คนละ localStorage (คนละเครื่อง)
+    setEmployeeRoomCode(roomCode);    // เก็บด้วย key แยกของพนักงาน ไม่ชนกับร้านที่เจ้าของเลือกไว้
   } catch (e) {
     console.error('joinEmployeeRoom: เปิด local DB ไม่สำเร็จ', e);
     showToast('เปิดฐานข้อมูลในเครื่องไม่สำเร็จ');
