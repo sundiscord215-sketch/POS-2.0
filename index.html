@@ -1514,7 +1514,7 @@
     </div>
     <div class="pay-layout">
       <div class="pay-bill-panel">
-        <div class="pbp-title">รายการสินค้า</div>
+        <div class="pbp-title">product</div>
         <div id="cash-bill-lines"><!-- render โดย renderPayBillLines() --></div>
       </div>
       <div class="pay-right">
@@ -1544,11 +1544,11 @@
  <div id="page-pay-qr" class="page pay-page">
     <div class="pay-back-row">
       <button class="pay-back-btn" onclick="switchPage('page-pos')">←</button>
-      <div style="font-size:12.5px; color:var(--text-dim);"><span id="qr-item-count">0</span> รายการ</div>
+      <div style="font-size:12.5px; color:var(--text-dim);"><span id="qr-item-count">0</span> items</div>
     </div>
     <div class="pay-layout">
       <div class="pay-bill-panel">
-        <div class="pbp-title">รายการสินค้า</div>
+        <div class="pbp-title">product</div>
         <div id="qr-bill-lines"><!-- render โดย renderPayBillLines() --></div>
       </div>
       <div class="pay-right">
@@ -5023,7 +5023,7 @@ function goToCashPage() {
   switchPage('page-pay-cash');
 }
 
-/** โชว์รายการสินค้าฝั่งซ้ายของหน้าเงินสด/QR (อ่านอย่างเดียว) */
+/** โชว์productฝั่งซ้ายของหน้าเงินสด/QR (อ่านอย่างเดียว) */
 function renderPayBillLines(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -5214,7 +5214,7 @@ async function goToQRPage() {
         <div class="qad-label">AMOUNT DUE</div>
         <div class="qad-amount">฿${fmt(total)}</div>
       </div>
-      <div class="qr-hint">ให้ลูกค้าสแกนจ่ายผ่านแอปธนาคาร แล้วกดยืนยันด้านล่างหลังเช็คเงินเข้าแล้ว</div>
+      <div class="qr-hint"></div>
       <div class="qr-confirm-bar">
         <button class="btn btn-secondary" onclick="switchPage('page-pos')">Cancel</button>
         <button class="btn btn-primary" onclick="confirmQRPayment()">Confirm Paid · ฿${fmt(total)}</button>
