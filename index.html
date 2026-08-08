@@ -2131,12 +2131,6 @@ const PAGES_WITHOUT_TOPNAV = new Set([
   'page-employee-name', 'page-employee-join', 'page-employee-pos', 'page-employee-receipts'
 ]);
 
-const PAGES_WITHOUT_TOPNAV = new Set([
-  'page-mode-selector', 'page-pay-cash', 'page-pay-qr', 'page-paid',
-  'page-receipt', 'page-sales-history', 'page-summary',
-  'page-employee-name', 'page-employee-join', 'page-employee-pos', 'page-employee-receipts'
-]);
-
 function switchPage(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const target = document.getElementById(pageId);
@@ -2150,13 +2144,6 @@ function switchPage(pageId) {
   } else if (getActiveRoomCode()) {
     topnav.classList.add('show');
     fab.classList.add('show');
-  }
-}
-  const topnav = document.getElementById('topnav');
-  if (PAGES_WITHOUT_TOPNAV.has(pageId)) {
-    topnav.classList.remove('show');
-  } else if (getActiveRoomCode()) {
-    topnav.classList.add('show');
   }
 }
 
