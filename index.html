@@ -6009,7 +6009,7 @@ async function renderSummaryPage() {
   const totalRevenue = filteredSales.reduce((sum, s) => sum + netTotal(s), 0);
   const orderCount = filteredSales.length;
 
-  // ยอดขายของแต่ละคน
+// ยอดขายของแต่ละคน (โชว์ทั้งยอดขายและกำไรสุทธิ เพื่อให้แบ่งเงินง่าย)
   const ownerTotals = {};
   filteredSales.forEach(s => {
     s.items.forEach(it => {
@@ -6017,17 +6017,28 @@ async function renderSummaryPage() {
       if (remainingQty <= 0) return;
       const p = products.find(x => x.id === it.productId);
       const key = (p && p.ownerId) || '_none';
-      ownerTotals[key] = (ownerTotals[key] || 0) + it.price * remainingQty;
+      const unitCost = p ? (p.cost || 0) : 0;
+      if (!ownerTotals[key]) ownerTotals[key] = { revenue: 0, cost: 0 };
+      ownerTotals[key].revenue += it.price * remainingQty;
+      ownerTotals[key].cost += unitCost * remainingQty;
     });
   });
   const ownerRowsHtml = Object.entries(ownerTotals)
-    .sort((a, b) => b[1] - a[1])
-    .map(([key, amount]) => {
+    .sort((a, b) => b[1].revenue - a[1].revenue)
+    .map(([key, data]) => {
       const owner = owners.find(o => o.id === key);
       const name = owner ? owner.name : 'ไม่ระบุเจ้าของ';
-      return `<div class="summary-owner-row"><span class="so-name">${escapeHtml(name)}</span><span class="so-amount">${fmt(amount)} ฿</span></div>`;
+      const profit = data.revenue - data.cost;
+      const profitColor = profit >= 0 ? 'var(--accent)' : 'var(--danger)';
+      return `
+        <div class="summary-owner-row" style="align-items:flex-start;">
+          <span class="so-name">${escapeHtml(name)}</span>
+          <span class="so-amount" style="text-align:right;">
+            ${fmt(data.revenue)} ฿
+            <div style="font-size:11px; font-weight:700; color:${profitColor}; margin-top:2px;">กำไร ${fmt(profit)} ฿</div>
+          </span>
+        </div>`;
     }).join('') || '<div class="sm-empty" style="padding:16px 0;">ยังไม่มียอดขาย</div>';
-
   // สินค้าขายดี
   const productTotals = {};
   filteredSales.forEach(s => {
