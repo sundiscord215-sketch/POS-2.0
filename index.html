@@ -1812,7 +1812,7 @@
     <button class="sp-close" onclick="closeSettingsPanel()">✕</button>
   </div>
 
-  <div class="sp-body">
+<div class="sp-body">
 
     <!-- หมวด 1: จัดการร้าน -->
     <div class="sp-category" id="sp-category-manage">
@@ -1834,37 +1834,43 @@
       </div>
     </div>
 
-    <!-- หมวด 2: ใบเสร็จ/Refund -->
+    <!-- หมวด 2: สรุปยอดขาย -->
     <div class="sp-category">
-     <div class="sp-category-row" onclick="closeSettingsPanel(); goToSummaryPage();">
-        <div class="sp-icon">🧾</div>
+      <div class="sp-category-row" onclick="closeSettingsPanel(); goToSummaryPage();">
+        <div class="sp-icon">📈</div>
         <div class="sp-main">
-          <div class="sp-label">ใบเสร็จ / Refund</div>
-          <div class="sp-sub">ดูบิล · คืนเงิน</div>
+          <div class="sp-label">สรุปยอดขาย</div>
+          <div class="sp-sub">ยอดรวม · แยกตามคน · สินค้าขายดี</div>
         </div>
         <div class="sp-chevron">›</div>
       </div>
     </div>
 
-    <!-- หมวด 3: ข้อมูล/รายงาน -->
-    <div class="sp-category" id="sp-category-data">
-      <div class="sp-category-row" onclick="toggleCategory('sp-category-data')">
-        <div class="sp-icon">📊</div>
+    <!-- หมวด 3: นำเข้า-ส่งออกข้อมูล -->
+    <div class="sp-category">
+      <div class="sp-category-row" onclick="closeSettingsPanel(); goToDataPage();">
+        <div class="sp-icon">💾</div>
         <div class="sp-main">
-          <div class="sp-label">ข้อมูล / รายงาน</div>
-          <div class="sp-sub">สรุปยอด · นำเข้า-ส่งออกข้อมูล</div>
+          <div class="sp-label">นำเข้า-ส่งออกข้อมูล</div>
+          <div class="sp-sub">Export / Import (.json)</div>
         </div>
         <div class="sp-chevron">›</div>
       </div>
-   <div class="sp-detail">
-        <button class="sp-detail-btn" onclick="switchAppMode()">🔁 สลับโหมด (ร้านค้า / พนักงาน)</button>
-        <button class="sp-detail-btn" id="theme-toggle-btn" onclick="toggleDarkTheme()">🌙 ธีมมืด</button>
+    </div>
 
-        <button class="sp-detail-btn danger" onclick="toggleDangerZone()">⚠️ โซนอันตราย</button>
+    <!-- หมวด 4: ธีม -->
+    <div class="sp-category">
+      <div class="sp-category-row" onclick="toggleDarkTheme()">
+        <div class="sp-icon" id="theme-toggle-icon">🌙</div>
+        <div class="sp-main">
+          <div class="sp-label" id="theme-toggle-label">ธีมมืด</div>
+          <div class="sp-sub">สลับโหมดสว่าง / มืด</div>
+        </div>
+        <div class="sp-chevron">›</div>
       </div>
     </div>
 
-    <!-- หมวด 4: ระบบ (ใช้งานได้จริงแล้ว — สลับโหมด + โซนอันตราย) -->
+    <!-- หมวด 5: ระบบ -->
     <div class="sp-category" id="sp-category-system">
       <div class="sp-category-row" onclick="toggleCategory('sp-category-system')">
         <div class="sp-icon">⚙️</div>
@@ -1887,7 +1893,6 @@
     </div>
 
   </div>
-</div>
 
 <!-- ══════════════════════════════════════════════
      MODAL: สร้างร้านใหม่
@@ -2283,10 +2288,12 @@ function toggleDarkTheme() {
 }
 
 function updateThemeToggleLabel() {
-  const btn = document.getElementById('theme-toggle-btn');
-  if (!btn) return;
+  const icon = document.getElementById('theme-toggle-icon');
+  const label = document.getElementById('theme-toggle-label');
+  if (!icon || !label) return;
   const theme = localStorage.getItem(THEME_KEY) || 'light';
-  btn.textContent = theme === 'dark' ? '☀️ ธีมสว่าง' : '🌙 ธีมมืด';
+  icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+  label.textContent = theme === 'dark' ? 'ธีมสว่าง' : 'ธีมมืด';
 }
 
 function getStoreRegistry() {
