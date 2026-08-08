@@ -1475,9 +1475,97 @@
     <div class="sub-page-body" id="summary-body"><!-- render โดย renderSummaryPage() --></div>
   </div>
 
-  <!-- page อื่นๆ (P2P, ฝั่งพนักงาน ฯลฯ) จะเพิ่มในบล็อคถัดไป -->
+<!-- ══════════════════════════════════════════════
+       PAGE: พนักงาน — กรอกชื่อ (ครั้งแรกครั้งเดียว)
+       ══════════════════════════════════════════════ -->
+  <div id="page-employee-name" class="page" style="align-items:center; justify-content:center; padding:24px; background:var(--bg);">
+    <div class="ms-logo">POS บูธ</div>
+    <div class="ms-sub">กรอกชื่อของคุณ เพื่อใช้แสดงในรายงานยอดขาย</div>
+    <div class="form-group" style="width:100%; max-width:320px;">
+      <input type="text" class="form-input" id="input-employee-name" placeholder="เช่น น้องพลอย">
+    </div>
+    <button class="btn btn-primary" style="width:100%; max-width:320px;" onclick="submitEmployeeName()">ถัดไป</button>
+  </div>
 
- 
+  <!-- ══════════════════════════════════════════════
+       PAGE: พนักงาน — กรอก/สแกน รหัสห้อง
+       ══════════════════════════════════════════════ -->
+  <div id="page-employee-join" class="page" style="align-items:center; justify-content:center; padding:24px; background:var(--bg);">
+    <div class="ms-logo">เข้าร้าน</div>
+    <div class="ms-sub" id="employee-join-sub">กรอกรหัสห้องที่ได้จากเจ้าของร้าน</div>
+    <div class="form-group" style="width:100%; max-width:320px;">
+      <input type="text" class="form-input" id="input-join-room-code" placeholder="รหัสห้อง 6 หลัก" style="text-transform:uppercase; letter-spacing:2px; text-align:center; font-weight:700;">
+    </div>
+    <button class="btn btn-primary" style="width:100%; max-width:320px;" id="employee-join-btn" onclick="submitJoinRoom()">เข้าร้าน</button>
+    <button class="btn btn-secondary" style="width:100%; max-width:320px; margin-top:10px;" onclick="switchPage('page-mode-selector')">← กลับ</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: หน้าขาย ฝั่งพนักงาน (ไม่มีต้นทุน/กำไร/ปุ่มจัดการร้าน)
+       ══════════════════════════════════════════════ -->
+  <div id="page-employee-pos" class="page" style="background:var(--bg); position:relative;">
+    <div class="pos-grid" id="employee-pos-grid"></div>
+    <button class="cart-bar" id="employee-cart-bar" onclick="openEmployeeCartSheet()">
+      <span class="cart-bar-count" id="employee-cart-bar-count">0</span>
+      <span class="cart-bar-label">ตะกร้า</span>
+      <span class="cart-bar-total" id="employee-cart-bar-total">0 บ.</span>
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: ประวัติใบเสร็จ ฝั่งพนักงาน (มี badge รอส่ง/ส่งแล้ว)
+       ══════════════════════════════════════════════ -->
+  <div id="page-employee-receipts" class="page history-page">
+    <div class="sub-page-header">
+      <button class="pay-back-btn" onclick="switchPage('page-employee-pos')">←</button>
+      <div class="sph-title">ใบเสร็จของฉัน</div>
+    </div>
+    <div class="sub-page-body" id="employee-receipts-body"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       MODAL: ตะกร้า ฝั่งพนักงาน (คล้าย modal-cart เดิม แต่แยกเพราะ cart state คนละตัว)
+       ══════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-employee-cart">
+    <div class="modal-panel">
+      <div class="modal-title">ตะกร้าสินค้า</div>
+      <div id="employee-cart-lines-container"></div>
+      <div class="cart-total-row">
+        <span>ยอดรวม</span>
+        <span class="ct-amount" id="employee-cart-total-amount">0 บ.</span>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-employee-cart')">ปิด</button>
+       <button class="btn btn-primary" id="employee-cart-charge-btn" onclick="closeModal('modal-employee-cart'); openEmployeePaymentModal(); openModal('modal-employee-payment-method');">เก็บเงิน</button>
+      </div>
+      <div class="cart-clear-link" onclick="clearEmployeeCartConfirm()">ล้างตะกร้าทั้งหมด</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       MODAL: เลือกวิธีจ่าย ฝั่งพนักงาน (เงินสดเท่านั้น — ไม่มี PromptPay ของ iPad)
+       ══════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-employee-payment-method">
+    <div class="modal-panel">
+      <div class="modal-title">รับเงิน</div>
+      <div class="form-group">
+        <label class="form-label">ยอดที่ต้องชำระ</label>
+        <div style="font-size:28px; font-weight:800; color:var(--cta); text-align:center; padding:10px 0;" id="employee-pay-total">0 บ.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">รับเงินมา (บาท)</label>
+        <input type="number" inputmode="decimal" class="form-input" id="input-employee-cash-received" placeholder="0" oninput="renderEmployeeCashChange()">
+      </div>
+      <div class="cash-change-box" id="employee-cash-change-box">
+        <div class="ccb-label">เงินทอน</div>
+        <div class="ccb-amount" id="employee-cash-change-amount">0 บ.</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-employee-payment-method')">ยกเลิก</button>
+        <button class="btn btn-primary" id="employee-cash-confirm-btn" onclick="confirmEmployeeCashPayment()">ยืนยันรับเงิน</button>
+      </div>
+    </div>
+  </div>
 
   <div id="toast-container"></div>
 
@@ -2011,7 +2099,7 @@ function deleteStoreDB(roomCode) {
       _dbInstance = null;
       _dbRoomCode = null;
     }
-    const req = indexedDB.deleteDatabase(dbName(roomCode));
+const req = indexedDB.deleteDatabase(dbName(roomCode));
     req.onsuccess = () => resolve();
     req.onerror = (e) => reject(e.target.error);
   });
@@ -2019,9 +2107,173 @@ function deleteStoreDB(roomCode) {
 
 
 /* ══════════════════════════════════════════════════════════════
-   MODE SELECTOR LOGIC
+   PEER CONNECTION LAYER (WebRTC P2P via PeerJS)
+   ── iPad (host) = Peer ID คือ roomCode ของร้าน, ประกาศตัวรอตลอด
+   ── มือถือ (client) = Peer ID สุ่ม, ต่อเข้าหา roomCode ของ host
+   ── หลัง handshake ครั้งแรกผ่าน 0.peerjs.com, data วิ่ง P2P ตรง
+   ── โปรโตคอลข้อความ: { type, payload, ts }
    ══════════════════════════════════════════════════════════════ */
 
+let _peer = null;
+let _peerRole = null;           // 'host' | 'client' | null
+let _hostConn = null;           // (client only) DataConnection ไปหา host
+let _employeeConns = {};        // (host only) { peerId: DataConnection }
+let _peerReconnectTimer = null;
+let _peerHandlers = {};         // type -> function(payload, conn)
+let _peerRoomCode = null;
+
+function registerPeerHandler(type, fn) {
+  _peerHandlers[type] = fn;
+}
+
+function _dispatchPeerMessage(raw, conn) {
+  let msg;
+  try { msg = JSON.parse(raw); } catch (e) { console.error('peer msg parse error', e); return; }
+  if (!msg || !msg.type) return;
+  const handler = _peerHandlers[msg.type];
+  if (handler) handler(msg.payload, conn);
+  else console.warn('ไม่มี handler สำหรับ peer message type:', msg.type);
+}
+
+function sendPeerMessage(conn, type, payload) {
+  if (!conn || conn.open !== true) return false;
+  try {
+    conn.send(JSON.stringify({ type, payload, ts: Date.now() }));
+    return true;
+  } catch (e) {
+    console.error('sendPeerMessage error', e);
+    return false;
+  }
+}
+
+function broadcastToEmployees(type, payload) {
+  Object.values(_employeeConns).forEach(conn => sendPeerMessage(conn, type, payload));
+}
+
+function initPeerHost(roomCode, onEmployeeConnected, onEmployeeDisconnected) {
+  _peerRole = 'host';
+  _peerRoomCode = roomCode;
+
+  if (_peer && !_peer.destroyed) {
+    _peer.destroy();
+  }
+
+  _peer = new Peer(roomCode, { debug: 1 });
+
+  _peer.on('open', () => {
+    console.log('[peer] host พร้อมรับการเชื่อมต่อ, roomCode =', roomCode);
+  });
+
+  _peer.on('connection', (conn) => {
+    conn.on('open', () => {
+      _employeeConns[conn.peer] = conn;
+      if (onEmployeeConnected) onEmployeeConnected(conn);
+    });
+    conn.on('data', (raw) => _dispatchPeerMessage(raw, conn));
+    conn.on('close', () => {
+      delete _employeeConns[conn.peer];
+      if (onEmployeeDisconnected) onEmployeeDisconnected(conn);
+    });
+    conn.on('error', (err) => {
+      console.error('[peer] employee conn error', err);
+      delete _employeeConns[conn.peer];
+      if (onEmployeeDisconnected) onEmployeeDisconnected(conn);
+    });
+  });
+
+  _peer.on('error', (err) => {
+    console.error('[peer] host peer error', err);
+    if (err.type === 'unavailable-id') {
+      showToast('รหัสห้องนี้กำลังถูกใช้งานจากเครื่องอื่นอยู่');
+    }
+  });
+
+  _peer.on('disconnected', () => {
+    if (_peer && !_peer.destroyed) _peer.reconnect();
+  });
+}
+
+function initPeerClient(roomCode, onOpen, onClose) {
+  _peerRole = 'client';
+  _peerRoomCode = roomCode;
+
+  if (_peer && !_peer.destroyed) {
+    _peer.destroy();
+  }
+
+  _peer = new Peer({ debug: 1 });
+
+  _peer.on('open', () => {
+    _connectToHost(onOpen, onClose);
+  });
+
+  _peer.on('error', (err) => {
+    console.error('[peer] client peer error', err);
+  });
+
+  _peer.on('disconnected', () => {
+    if (_peer && !_peer.destroyed) _peer.reconnect();
+  });
+
+  _startPeerReconnectLoop(onOpen, onClose);
+}
+
+function _connectToHost(onOpen, onClose) {
+  if (!_peer || _peer.destroyed || !_peerRoomCode) return;
+  if (_hostConn && _hostConn.open) return;
+
+  const conn = _peer.connect(_peerRoomCode, { reliable: true });
+
+  conn.on('open', () => {
+    _hostConn = conn;
+    setConnStatus(true);
+    if (onOpen) onOpen(conn);
+  });
+  conn.on('data', (raw) => _dispatchPeerMessage(raw, conn));
+  conn.on('close', () => {
+    if (_hostConn === conn) _hostConn = null;
+    setConnStatus(false);
+    if (onClose) onClose();
+  });
+  conn.on('error', (err) => {
+    console.error('[peer] host conn error', err);
+    if (_hostConn === conn) _hostConn = null;
+    setConnStatus(false);
+    if (onClose) onClose();
+  });
+}
+
+function _startPeerReconnectLoop(onOpen, onClose) {
+  _stopPeerReconnectLoop();
+  _peerReconnectTimer = setInterval(() => {
+    if (_peerRole !== 'client') return;
+    if (_hostConn && _hostConn.open) return;
+    if (!_peer || _peer.destroyed) return;
+    _connectToHost(onOpen, onClose);
+  }, 5000);
+}
+
+function _stopPeerReconnectLoop() {
+  if (_peerReconnectTimer) {
+    clearInterval(_peerReconnectTimer);
+    _peerReconnectTimer = null;
+  }
+}
+
+function teardownPeer() {
+  _stopPeerReconnectLoop();
+  if (_peer && !_peer.destroyed) _peer.destroy();
+  _peer = null;
+  _peerRole = null;
+  _hostConn = null;
+  _employeeConns = {};
+  _peerRoomCode = null;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   MODE SELECTOR LOGIC
+   ══════════════════════════════════════════════════════════════ */
 function selectMode(mode) {
   localStorage.setItem(MODE_KEY, mode);
   routeAfterModeSelect(mode);
@@ -2044,13 +2296,60 @@ function routeAfterModeSelect(mode) {
         renderStoreList();
       }
     });
-  } else {
-    // TODO (บล็อค 9): เข้า flow พนักงาน (กรอกชื่อ → สแกน QR)
-    // ยังไม่มีหน้าพนักงานจริง — กันจอค้างว่างโดยพาไปหน้าเลือกโหมดไว้ก่อน
-    switchPage('page-mode-selector');
+} else {
     hideSettingsFab();
-    showToast('โหมดพนักงาน — รอบล็อคถัดไปสำหรับหน้ากรอกชื่อ/สแกน QR');
+    routeEmployeeFlow();
   }
+}
+
+/** ตัดสินใจว่าพนักงานควรเจอหน้าไหนก่อน: กรอกชื่อ → กรอกรหัสห้อง → เข้าหน้าขายเลย (ถ้าเคย join ไว้แล้ว) */
+function routeEmployeeFlow() {
+  if (!getEmployeeName()) {
+    switchPage('page-employee-name');
+    return;
+  }
+  const savedRoom = getActiveRoomCode();
+  if (savedRoom) {
+    switchPage('page-employee-pos');
+    startEmployeeSession(savedRoom);
+  } else {
+    switchPage('page-employee-join');
+  }
+}
+
+function submitEmployeeName() {
+  const input = document.getElementById('input-employee-name');
+  const name = input.value.trim();
+  if (!name) {
+    showToast('กรุณากรอกชื่อ');
+    input.focus();
+    return;
+  }
+  setEmployeeName(name);
+  routeEmployeeFlow();
+}
+
+async function submitJoinRoom() {
+  const input = document.getElementById('input-join-room-code');
+  const roomCode = input.value.trim().toUpperCase();
+  if (!roomCode) {
+    showToast('กรุณากรอกรหัสห้อง');
+    input.focus();
+    return;
+  }
+  const btn = document.getElementById('employee-join-btn');
+  btn.disabled = true;
+  document.getElementById('employee-join-sub').textContent = 'กำลังเชื่อมต่อ...';
+
+  const ok = await joinEmployeeRoom(roomCode);
+  btn.disabled = false;
+
+  if (!ok) {
+    document.getElementById('employee-join-sub').textContent = 'เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง';
+    return;
+  }
+  switchPage('page-employee-pos');
+  startEmployeeSession(roomCode);
 }
 
 /**
@@ -3144,6 +3443,7 @@ async function goToPOSPage() {
   renderPOSGrid();
   renderCartBar();
   renderPOSCartPanel();
+  ensureHostPeerRunning();
 }
 async function loadPOSProducts() {
   try {
@@ -3345,7 +3645,7 @@ function renderPOSCartPanel() {
     }).join('');
   }
 
-  totalEl.textContent = fmt(getCartTotal()) + ' บ.';
+totalEl.textContent = fmt(getCartTotal()) + ' บ.';
   const disabled = entries.length === 0;
   if (cashBtn) cashBtn.disabled = disabled;
   if (qrBtn) qrBtn.disabled = disabled;
@@ -3353,9 +3653,538 @@ function renderPOSCartPanel() {
 
 
 /* ══════════════════════════════════════════════════════════════
-   QR CODE ENCODER (ออฟไลน์ล้วน — เขียนเอง, ทดสอบ round-trip กับ decoder จริงแล้ว)
-   รองรับ version 1-5, EC level L (พอสำหรับ payload PromptPay ~50-90 ตัวอักษร)
+   HOST-SIDE EMPLOYEE SYNC (iPad รับพนักงานเชื่อมต่อ + รับใบเสร็จ)
    ══════════════════════════════════════════════════════════════ */
+
+let _hostPeerStarted = false;
+
+/** เรียกทุกครั้งที่เข้าหน้าขาย — เปิด host ครั้งเดียวพอ (กันเปิดซ้ำเวลาสลับหน้าไปมา) */
+function ensureHostPeerRunning() {
+  const roomCode = getActiveRoomCode();
+  if (!roomCode) return;
+  if (_hostPeerStarted && _peerRole === 'host' && _peerRoomCode === roomCode) return;
+
+  _hostPeerStarted = true;
+  initPeerHost(
+    roomCode,
+    (conn) => onEmployeeConnected(conn),
+    (conn) => onEmployeeDisconnected(conn)
+  );
+
+  registerPeerHandler('sale', (payload, conn) => handleIncomingSale(payload, conn));
+  registerPeerHandler('requestCatalog', (payload, conn) => sendCatalogToEmployee(conn));
+}
+
+/** พนักงานต่อติดใหม่ — ส่ง catalog + stock ปัจจุบันให้ทันที (ไม่ต้องรอพนักงานขอ) */
+function onEmployeeConnected(conn) {
+  showToast(`พนักงานเชื่อมต่อแล้ว (${Object.keys(_employeeConns).length} คน)`);
+  sendCatalogToEmployee(conn);
+}
+
+function onEmployeeDisconnected(conn) {
+  showToast(`พนักงานหลุดการเชื่อมต่อ (เหลือ ${Object.keys(_employeeConns).length} คน)`);
+}
+
+/** ส่งสินค้าทั้งหมด (ไม่รวมต้นทุน/สูตรวัตถุดิบ — พนักงานเห็นแค่ชื่อ+ราคาขาย+สต็อก) ให้มือถือเครื่องเดียว */
+function sendCatalogToEmployee(conn) {
+  const products = _posProducts.map(p => ({
+    id: p.id,
+    name: p.name,
+    image: p.image,
+    price: p.price,
+    stockEnabled: p.stockEnabled,
+    stock: p.stock,
+  }));
+  sendPeerMessage(conn, 'catalog', { products, roomCode: _peerRoomCode });
+}
+
+/** พนักงานส่งใบเสร็จเข้ามา (ตอนออนไลน์ตอนขาย หรือดันคิวตอน reconnect)
+ *  กันซ้ำด้วย sale.id — ถ้าเจอ id เดิมใน store 'sales' อยู่แล้ว ข้ามไม่บวกซ้ำ แต่ยัง ack กลับให้เคลียร์คิวฝั่งพนักงานได้ */
+async function handleIncomingSale(saleFromEmployee, conn) {
+  try {
+    const existing = await dbGetAll('sales');
+    const dup = existing.find(s => s.id === saleFromEmployee.id);
+
+    if (!dup) {
+      await dbPut('sales', saleFromEmployee);
+
+      // ตัดสต็อกจริงบน iPad ตามรายการที่ขายมา
+      for (const it of saleFromEmployee.items) {
+        const p = _posProducts.find(x => x.id === it.productId);
+        if (p && p.stockEnabled) {
+          p.stock = Math.max(0, p.stock - it.qty);
+          await dbPut('products', p);
+        }
+      }
+      await loadPOSProducts();
+
+      // อัปเดตหน้าจอ iPad ถ้ากำลังอยู่หน้าขาย/สรุปยอด
+      const current = document.querySelector('.page.active');
+      if (current && current.id === 'page-pos') {
+        renderPOSGrid();
+        renderCartBar();
+        renderPOSCartPanel();
+      } else if (current && current.id === 'page-summary') {
+        renderSummaryPage();
+      } else if (current && current.id === 'page-sales-history') {
+        renderSalesHistory();
+      }
+
+      // แจ้งพนักงานทุกคน (รวมคนที่เพิ่งขาย) ว่าสต็อกอัปเดตแล้ว
+      broadcastToEmployees('stockUpdate', {
+        products: _posProducts.map(p => ({ id: p.id, stockEnabled: p.stockEnabled, stock: p.stock }))
+      });
+
+      showToast(`รับใบเสร็จจากพนักงาน · ${fmt(saleFromEmployee.total)} บ.`);
+    }
+
+ // ack กลับไม่ว่าจะซ้ำหรือไม่ซ้ำ — ฝั่งพนักงานจะได้ลบออกจากคิวได้เสมอ
+    sendPeerMessage(conn, 'ack', { saleId: saleFromEmployee.id });
+  } catch (e) {
+    console.error('handleIncomingSale error', e);
+    // ไม่ ack ถ้าเซฟไม่สำเร็จ — พนักงานจะลองส่งใหม่รอบหน้า
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   CLIENT-SIDE (มือถือพนักงาน) — เชื่อมต่อ + local cache + outbox
+   ── ใช้ initDB/dbGetAll/dbPut/dbClear เดิม แต่รันบนมือถือ (คนละเครื่อง
+      คนละ IndexedDB กับ iPad แม้ roomCode จะเหมือนกัน)
+   ── sale.synced (boolean) ใช้แทนคิว outbox แยก — ไม่ต้องเพิ่ม DB store ใหม่
+   ══════════════════════════════════════════════════════════════ */
+
+const EMPLOYEE_NAME_KEY = 'pos_employee_name';
+
+function getEmployeeName() {
+  return localStorage.getItem(EMPLOYEE_NAME_KEY) || '';
+}
+
+function setEmployeeName(name) {
+  localStorage.setItem(EMPLOYEE_NAME_KEY, name.trim());
+}
+
+/** เรียกตอนพนักงานกรอก/สแกน roomCode สำเร็จ (Block D จะเรียกจาก UI)
+ *  เปิด local DB ของมือถือ + เริ่มต่อ P2P ไปหา iPad */
+async function joinEmployeeRoom(roomCode) {
+  try {
+    await initDB(roomCode);           // สร้าง/เปิด IndexedDB บนมือถือเครื่องนี้ (แยกจาก iPad)
+    setActiveRoomCode(roomCode);      // ใช้ key เดิมร่วมกันได้ เพราะอยู่คนละ localStorage (คนละเครื่อง)
+  } catch (e) {
+    console.error('joinEmployeeRoom: เปิด local DB ไม่สำเร็จ', e);
+    showToast('เปิดฐานข้อมูลในเครื่องไม่สำเร็จ');
+    return false;
+  }
+
+  registerPeerHandler('catalog', (payload) => handleCatalogFromHost(payload));
+  registerPeerHandler('stockUpdate', (payload) => handleStockUpdateFromHost(payload));
+  registerPeerHandler('ack', (payload) => handleSaleAck(payload));
+
+  initPeerClient(
+    roomCode,
+    () => onHostConnected(),      // ต่อติด/reconnect สำเร็จ
+    () => onHostDisconnected()    // หลุดการเชื่อมต่อ
+  );
+
+  return true;
+}
+
+/** ต่อกับ iPad สำเร็จ (ครั้งแรก หรือ reconnect) — ดันคิวใบเสร็จค้าง แล้วรอ catalog/stock ล่าสุดจาก host */
+function onHostConnected() {
+  showToast('เชื่อมต่อกับร้านสำเร็จ');
+  pushPendingSalesQueue();
+  // ไม่ต้อง request catalog เอง — host ส่งให้อัตโนมัติทันทีที่ conn เปิด (ดู sendCatalogToEmployee ใน Block B)
+}
+
+function onHostDisconnected() {
+  // setConnStatus(false) ถูกเรียกให้แล้วจาก initPeerClient ภายใน — แค่แจ้งเตือนเพิ่มพอ
+  showToast('ขาดการเชื่อมต่อกับร้าน — ขายต่อได้ปกติ ระบบจะเชื่อมต่อใหม่อัตโนมัติ');
+}
+
+/** รับ catalog เต็มจาก host — เขียนทับ local cache ทั้งหมด (ไม่มีต้นทุน/กำไรติดมาอยู่แล้วเพราะ host กรองออกแล้ว) */
+async function handleCatalogFromHost(payload) {
+  try {
+    await dbClear('products');
+    for (const p of payload.products) {
+      await dbPut('products', p);
+    }
+    // ถ้ากำลังอยู่หน้าขายของพนักงานอยู่ (Block D จะมีฟังก์ชันนี้) ให้รีเฟรชกริดสินค้า
+    if (typeof renderEmployeePOSGrid === 'function') {
+      _employeeProducts = await dbGetAll('products');
+      renderEmployeePOSGrid();
+    }
+  } catch (e) {
+    console.error('handleCatalogFromHost error', e);
+  }
+}
+
+/** รับสต็อกอัปเดตสด (ตอนใครขายของไป ไม่ว่าจะขายจาก iPad หรือมือถือเครื่องอื่น) — patch เฉพาะ field สต็อก */
+async function handleStockUpdateFromHost(payload) {
+  try {
+    const local = await dbGetAll('products');
+    for (const upd of payload.products) {
+      const p = local.find(x => x.id === upd.id);
+      if (p) {
+        p.stockEnabled = upd.stockEnabled;
+        p.stock = upd.stock;
+        await dbPut('products', p);
+      }
+    }
+    if (typeof renderEmployeePOSGrid === 'function') {
+      _employeeProducts = await dbGetAll('products');
+      renderEmployeePOSGrid();
+    }
+  } catch (e) {
+    console.error('handleStockUpdateFromHost error', e);
+  }
+}
+
+/** host ตอบรับใบเสร็จแล้ว (ไม่ว่าจะเป็นบิลใหม่หรือบิลซ้ำที่เคยส่งไปแล้ว) — mark synced ในเครื่องพนักงาน */
+async function handleSaleAck(payload) {
+  try {
+    const sales = await dbGetAll('sales');
+    const sale = sales.find(s => s.id === payload.saleId);
+    if (sale && !sale.synced) {
+      sale.synced = true;
+      await dbPut('sales', sale);
+      if (typeof renderEmployeeReceiptHistory === 'function') {
+        renderEmployeeReceiptHistory(); // Block D จะมีฟังก์ชันนี้ — เอาไว้รีเฟรช badge 🟡→✅
+      }
+    }
+  } catch (e) {
+    console.error('handleSaleAck error', e);
+  }
+}
+
+/** ดันใบเสร็จที่ยังไม่ synced ทั้งหมดในเครื่องไปให้ host ทีเดียว — เรียกตอน onHostConnected() */
+async function pushPendingSalesQueue() {
+  if (!_hostConn || !_hostConn.open) return;
+  try {
+    const sales = await dbGetAll('sales');
+    const pending = sales.filter(s => !s.synced);
+    pending.forEach(sale => sendPeerMessage(_hostConn, 'sale', sale));
+  } catch (e) {
+    console.error('pushPendingSalesQueue error', e);
+  }
+}
+
+/**
+ * บันทึกการขายฝั่งพนักงาน — ทำงานได้ทั้งออนไลน์/ออฟไลน์เสมอ
+ * 1) ตัดสต็อกใน local cache ทันที (optimistic)
+ * 2) เซฟ sale ลง local DB โดย synced:false
+ * 3) ถ้าต่อ host อยู่ ส่งทันที (ออนไลน์) — ถ้าไม่ ปล่อยค้างไว้ในคิว รอ onHostConnected() ดันให้เอง
+ * Block D จะเรียกฟังก์ชันนี้แทน finalizeSale() เดิม (ซึ่งเป็นของฝั่ง iPad เท่านั้น)
+ */
+async function employeeFinalizeSale(cartItems, method, extra) {
+  extra = extra || {};
+  if (!cartItems || cartItems.length === 0) return null;
+
+  const items = cartItems.map(({ product, qty }) => ({
+    productId: product.id,
+    name: product.name,
+    image: product.image,
+    price: product.price,
+    qty,
+    subtotal: product.price * qty,
+    refundedQty: 0,
+  }));
+  const total = items.reduce((s, it) => s + it.subtotal, 0);
+
+  const sale = {
+    id: uid(),
+    createdAt: Date.now(),
+    items,
+    total,
+    paymentMethod: method,
+    cashReceived: extra.cashReceived != null ? extra.cashReceived : null,
+    changeGiven: extra.changeGiven != null ? extra.changeGiven : null,
+    refundStatus: 'none',
+    refundedTotal: 0,
+    employeeName: getEmployeeName(),
+    synced: false, // จะถูก mark true ตอนได้ ack จาก host
+  };
+
+  try {
+    // ตัดสต็อก local ทันที (กันขายเกินสต็อกที่เห็นบนจอ แม้ยังไม่ได้ sync กับ iPad)
+    for (const it of items) {
+      const local = await dbGetAll('products');
+      const p = local.find(x => x.id === it.productId);
+      if (p && p.stockEnabled) {
+        p.stock = Math.max(0, p.stock - it.qty);
+        await dbPut('products', p);
+      }
+    }
+    await dbPut('sales', sale);
+  } catch (e) {
+    console.error('employeeFinalizeSale: เซฟไม่สำเร็จ', e);
+    showToast('บันทึกการขายไม่สำเร็จ กรุณาลองใหม่');
+    return null;
+  }
+
+// พยายามส่งทันทีถ้าออนไลน์อยู่ — ถ้าไม่ติด ก็ไม่เป็นไร ใบเสร็จนี้จะถูกดันในรอบ pushPendingSalesQueue ครั้งถัดไป
+  if (_hostConn && _hostConn.open) {
+    sendPeerMessage(_hostConn, 'sale', sale);
+  }
+
+  return sale;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   หน้าขาย ฝั่งพนักงาน (UI) — คล้ายหน้า POS ของ iPad แต่ไม่มีต้นทุน/กำไร/ปุ่มจัดการร้าน
+   ══════════════════════════════════════════════════════════════ */
+
+let _employeeProducts = [];
+let _employeeCart = {}; // { productId: qty }
+
+/** เรียกครั้งเดียวตอนเข้าหน้าขายพนักงานสำเร็จ (join ใหม่ หรือกลับเข้าแอปซ้ำ) */
+async function startEmployeeSession(roomCode) {
+  try {
+    _employeeProducts = await dbGetAll('products');
+  } catch (e) {
+    console.error(e);
+    _employeeProducts = [];
+  }
+  renderEmployeePOSGrid();
+  renderEmployeeCartBar();
+
+  // ถ้ายังไม่ได้ต่อ peer (เช่นเปิดแอปใหม่แล้วมี roomCode ค้างจากรอบก่อน) ให้ต่อใหม่
+  if (_peerRole !== 'client' || _peerRoomCode !== roomCode) {
+    await joinEmployeeRoom(roomCode);
+  }
+}
+
+function employeeCartQtyOf(productId) {
+  return _employeeCart[productId] || 0;
+}
+
+function getEmployeeCartTotal() {
+  return Object.entries(_employeeCart).reduce((sum, [pid, qty]) => {
+    const p = _employeeProducts.find(x => x.id === pid);
+    return sum + (p ? p.price * qty : 0);
+  }, 0);
+}
+
+function renderEmployeePOSGrid() {
+  const container = document.getElementById('employee-pos-grid');
+  if (!container) return;
+
+  if (_employeeProducts.length === 0) {
+    container.innerHTML = `<div class="sm-empty" style="grid-column:1/-1;">ยังไม่มีสินค้า<br>รอเจ้าของร้านเพิ่มสินค้า</div>`;
+    return;
+  }
+
+  container.innerHTML = _employeeProducts.map(p => {
+    const inCart = employeeCartQtyOf(p.id);
+    const outOfStock = p.stockEnabled && p.stock <= 0;
+    const atMax = p.stockEnabled && inCart >= p.stock;
+    const disabled = outOfStock || atMax;
+    return `
+      <div class="pos-card ${disabled ? 'disabled' : ''}" role="button" tabindex="0" onclick="addToEmployeeCart('${p.id}')">
+        <div class="pos-card-icon">${productThumbHtml(p)}</div>
+        ${inCart > 0 ? `<div class="pos-card-qty-badge">${inCart}</div>` : ''}
+        <div class="pos-card-name">${escapeHtml(p.name)}</div>
+        <div class="pos-card-price">${fmt(p.price)} บ.</div>
+        ${p.stockEnabled ? `<div class="pos-card-stock">เหลือ ${fmt(p.stock)}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function addToEmployeeCart(productId) {
+  const p = _employeeProducts.find(x => x.id === productId);
+  if (!p) return;
+  const current = employeeCartQtyOf(productId);
+  if (p.stockEnabled && current >= p.stock) {
+    showToast('สินค้าเหลือไม่พอ');
+    return;
+  }
+  _employeeCart[productId] = current + 1;
+  renderEmployeePOSGrid();
+  renderEmployeeCartBar();
+  if (document.getElementById('modal-employee-cart').classList.contains('open')) {
+    renderEmployeeCartSheet();
+  }
+}
+
+function decrementEmployeeCartLine(productId) {
+  const current = employeeCartQtyOf(productId);
+  if (current <= 1) { removeEmployeeCartLine(productId); return; }
+  _employeeCart[productId] = current - 1;
+  renderEmployeePOSGrid();
+  renderEmployeeCartBar();
+  renderEmployeeCartSheet();
+}
+
+function removeEmployeeCartLine(productId) {
+  delete _employeeCart[productId];
+  renderEmployeePOSGrid();
+  renderEmployeeCartBar();
+  renderEmployeeCartSheet();
+}
+
+function clearEmployeeCartConfirm() {
+  if (Object.keys(_employeeCart).length === 0) return;
+  const ok = confirm('ล้างตะกร้าทั้งหมด?');
+  if (!ok) return;
+  _employeeCart = {};
+  renderEmployeePOSGrid();
+  renderEmployeeCartBar();
+  renderEmployeeCartSheet();
+}
+
+function renderEmployeeCartBar() {
+  const bar = document.getElementById('employee-cart-bar');
+  if (!bar) return;
+  const totalQty = Object.values(_employeeCart).reduce((s, q) => s + q, 0);
+  if (totalQty === 0) { bar.classList.remove('show'); return; }
+  bar.classList.add('show');
+  document.getElementById('employee-cart-bar-count').textContent = totalQty;
+  document.getElementById('employee-cart-bar-total').textContent = fmt(getEmployeeCartTotal()) + ' บ.';
+}
+
+function openEmployeeCartSheet() {
+  renderEmployeeCartSheet();
+  openModal('modal-employee-cart');
+}
+
+function renderEmployeeCartSheet() {
+  const container = document.getElementById('employee-cart-lines-container');
+  const entries = Object.entries(_employeeCart).filter(([, qty]) => qty > 0);
+
+  if (entries.length === 0) {
+    container.innerHTML = `<div class="sm-empty" style="margin:12px 0;">ตะกร้าว่างเปล่า</div>`;
+  } else {
+    container.innerHTML = entries.map(([pid, qty]) => {
+      const p = _employeeProducts.find(x => x.id === pid);
+      if (!p) return '';
+      const subtotal = p.price * qty;
+      return `
+        <div class="cart-line">
+          <div class="cl-icon">${productThumbHtml(p)}</div>
+          <div class="cl-main">
+            <div class="cl-name">${escapeHtml(p.name)}</div>
+            <div class="cl-unit-price">${fmt(p.price)} บ. / ชิ้น</div>
+          </div>
+          <div class="cl-stepper">
+            <button onclick="decrementEmployeeCartLine('${pid}')">−</button>
+            <div class="cl-qty">${qty}</div>
+            <button onclick="addToEmployeeCart('${pid}')">+</button>
+          </div>
+          <div class="cl-subtotal">${fmt(subtotal)} บ.</div>
+          <button class="cl-remove" onclick="removeEmployeeCartLine('${pid}')">🗑</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  document.getElementById('employee-cart-total-amount').textContent = fmt(getEmployeeCartTotal()) + ' บ.';
+  document.getElementById('employee-cart-charge-btn').disabled = entries.length === 0;
+}
+
+/* ── รับเงินสด ฝั่งพนักงาน (ไม่มี QR — ตามสเปคไม่ต้องมี PromptPay ของมือถือ) ── */
+
+function renderEmployeeCashChange() {
+  const total = getEmployeeCartTotal();
+  const receivedRaw = document.getElementById('input-employee-cash-received').value;
+  const received = parseFloat(receivedRaw) || 0;
+  const change = received - total;
+  const box = document.getElementById('employee-cash-change-box');
+  const amountEl = document.getElementById('employee-cash-change-amount');
+
+  if (receivedRaw === '') {
+    amountEl.textContent = '0 บ.';
+    box.classList.remove('insufficient');
+  } else if (change < 0) {
+    amountEl.textContent = 'ขาดอีก ' + fmt(Math.abs(change)) + ' บ.';
+    box.classList.add('insufficient');
+  } else {
+    amountEl.textContent = fmt(change) + ' บ.';
+    box.classList.remove('insufficient');
+  }
+  document.getElementById('employee-cash-confirm-btn').disabled = receivedRaw === '' || change < 0;
+}
+
+/* เปิด modal จ่ายเงิน ต้องเซ็ตยอดที่ต้องจ่าย + เคลียร์ช่องกรอกก่อนทุกครั้ง */
+document.addEventListener('DOMContentLoaded', () => {}); // กัน error เผื่อ browser เก่า (ไม่ทำอะไร)
+
+function openEmployeePaymentModal() {
+  document.getElementById('employee-pay-total').textContent = fmt(getEmployeeCartTotal()) + ' บ.';
+  document.getElementById('input-employee-cash-received').value = '';
+  renderEmployeeCashChange();
+}
+
+async function confirmEmployeeCashPayment() {
+  const total = getEmployeeCartTotal();
+  const received = parseFloat(document.getElementById('input-employee-cash-received').value) || 0;
+  if (received < total) return;
+
+  const cartItems = Object.entries(_employeeCart)
+    .filter(([, qty]) => qty > 0)
+    .map(([pid, qty]) => ({ product: _employeeProducts.find(x => x.id === pid), qty }))
+    .filter(x => x.product);
+
+  const sale = await employeeFinalizeSale(cartItems, 'cash', { cashReceived: received, changeGiven: received - total });
+  if (!sale) return;
+
+  _employeeCart = {};
+  _employeeProducts = await dbGetAll('products'); // ดึง stock ที่ตัดไปแล้วกลับมาโชว์
+  closeModal('modal-employee-payment-method');
+  renderEmployeePOSGrid();
+  renderEmployeeCartBar();
+  showToast(`ขายสำเร็จ · ${fmt(total)} บ.`);
+}
+
+/* ── ประวัติใบเสร็จ ฝั่งพนักงาน (badge 🟡รอส่ง / ✅ส่งแล้ว) ── */
+
+async function goToEmployeeReceiptsPage() {
+  switchPage('page-employee-receipts');
+  await renderEmployeeReceiptHistory();
+}
+
+async function renderEmployeeReceiptHistory() {
+  const container = document.getElementById('employee-receipts-body');
+  if (!container) return;
+  container.innerHTML = '<div class="sm-empty">กำลังโหลด...</div>';
+
+  let sales;
+  try {
+    sales = await dbGetAll('sales');
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = '<div class="sm-empty">โหลดข้อมูลไม่สำเร็จ</div>';
+    return;
+  }
+  sales.sort((a, b) => b.createdAt - a.createdAt);
+
+  if (sales.length === 0) {
+    container.innerHTML = '<div class="sm-empty">ยังไม่มีรายการขาย</div>';
+    return;
+  }
+
+  container.innerHTML = sales.map(sale => {
+    const dt = new Date(sale.createdAt);
+    const timeStr = dt.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' }) +
+      ' ' + dt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    const itemCount = sale.items.reduce((s, it) => s + it.qty, 0);
+    const syncBadge = sale.synced
+      ? `<span class="hi-badge" style="background:rgba(46,204,113,0.15); color:var(--paid-green);">✅ ส่งแล้ว</span>`
+      : `<span class="hi-badge" style="background:rgba(234,179,8,0.15); color:#b45309;">🟡 รอส่ง</span>`;
+    return `
+      <div class="history-item">
+        <div class="hi-main">
+          <div class="hi-time">${timeStr} · 💵</div>
+          <div class="hi-summary">${itemCount} ชิ้น</div>
+        </div>
+        ${syncBadge}
+        <div class="hi-amount">${fmt(sale.total)} บ.</div>
+      </div>`;
+  }).join('');
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   QR CODE ENCODER (ออฟไลน์ล้วน — เขียนเอง, ทดสอบ round-trip กับ decoder จริงแล้ว)
 
 /* Minimal offline QR Code encoder — versions 1-5, EC level L only (single RS block, no interleaving needed).
    Enough capacity (up to 108 data codewords ≈ 154 alphanumeric chars) for PromptPay EMV payloads. */
