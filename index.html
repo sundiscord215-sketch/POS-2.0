@@ -845,8 +845,8 @@
     .pos-cart-panel .pcp-pay-row { display: flex; gap: 10px; }
     .pos-cart-panel .pcp-pay-row .btn { padding: 14px; }
 
-    /* จอกว้างมีแผงขวาแทนแล้ว ไม่ต้องมีแถบลอย */
-    .cart-bar { display: none !important; }
+  /* จอกว้างมีแผงขวาแทนแล้ว ไม่ต้องมีแถบลอย (เฉพาะฝั่งเจ้าของร้าน — พนักงานไม่มีแผงขวา ต้องใช้แถบลอยเสมอ) */
+    #cart-bar { display: none !important; }
 
     /* ── รายการในแผงตะกร้าขวา แบบกระชับ (ไม่มีไอคอน) ── */
     .pcp-line {
@@ -1642,6 +1642,13 @@
        PAGE: หน้าขาย ฝั่งพนักงาน (ไม่มีต้นทุน/กำไร/ปุ่มจัดการร้าน)
        ══════════════════════════════════════════════ -->
 <div id="page-employee-pos" class="page" style="background:var(--bg); position:relative; flex-direction:column;">
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0;">
+      <div style="font-size:14px; font-weight:700; color:var(--text); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">👋 <span id="employee-topbar-name"></span></div>
+      <div style="display:flex; gap:8px; flex-shrink:0;">
+        <button onclick="goToEmployeeReceiptsPage()" style="padding:7px 12px; border-radius:8px; background:var(--surface2); color:var(--text-dim); font-size:12.5px; font-weight:700;">🧾 ใบเสร็จ</button>
+        <button onclick="exitEmployeeSession()" style="padding:7px 12px; border-radius:8px; background:var(--surface2); color:var(--danger); font-size:12.5px; font-weight:700;">🚪 ออก</button>
+      </div>
+    </div>
     <div id="employee-conn-fail-banner" style="display:none; align-items:center; gap:10px; padding:12px 16px; background:rgba(239,68,68,0.1); border-bottom:1.5px solid var(--danger);">
       <div style="flex:1; min-width:0;">
         <div style="font-size:13.5px; font-weight:700; color:var(--danger);">เชื่อมต่อร้านไม่ได้</div>
@@ -4277,6 +4284,23 @@ function clearEmployeeRoomCode() {
   localStorage.removeItem(EMPLOYEE_ROOM_KEY);
 }
 
+/** ปุ่ม "ออก" บนหน้าขายพนักงาน — ออกจากร้านนี้ กลับไปหน้ากรอก code ใหม่ (ยังจำชื่อพนักงานไว้) */
+function exitEmployeeSession() {
+  const ok = confirm('ออกจากร้านนี้?\nตะกร้าปัจจุบันจะหายไป ต้องกรอก code ใหม่เพื่อกลับเข้ามาขาย');
+  if (!ok) return;
+  teardownPeer();
+  clearEmployeeRoomCode();
+  _employeeCart = {};
+  _employeeProducts = [];
+  hideEmployeeConnFailBanner();
+  _employeeConnectFailCount = 0;
+  switchPage('page-employee-join');
+  const input = document.getElementById('input-join-room-code');
+  if (input) input.value = '';
+  const sub = document.getElementById('employee-join-sub');
+  if (sub) sub.textContent = 'กรอกcodeที่ได้จากเจ้าของร้าน';
+}
+
 /** เรียกตอนพนักงานกรอก/สแกน roomCode สำเร็จ (Block D จะเรียกจาก UI)
  *  เปิด local DB ของมือถือ + เริ่มต่อ P2P ไปหา iPad */
 async function joinEmployeeRoom(roomCode) {
@@ -4507,6 +4531,9 @@ let _employeeCart = {}; // { productId: qty }
 
 /** เรียกครั้งเดียวตอนเข้าหน้าขายพนักงานสำเร็จ (join ใหม่ หรือกลับเข้าแอปซ้ำ) */
 async function startEmployeeSession(roomCode) {
+  const nameEl = document.getElementById('employee-topbar-name');
+  if (nameEl) nameEl.textContent = getEmployeeName();
+
   try {
     await initDB(roomCode);
     _employeeProducts = await dbGetAll('products');
