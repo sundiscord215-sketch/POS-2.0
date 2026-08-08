@@ -2366,8 +2366,6 @@ function bootApp() {
   }
 }
 
-bootApp();
-
 
 /* ══════════════════════════════════════════════════════════════
    STORE MANAGEMENT (หน้าสร้างห้อง/จัดการร้าน)
@@ -5231,8 +5229,11 @@ function importStoreData(event) {
       showToast('ไฟล์ไม่ถูกต้อง หรือ Import ไม่สำเร็จ');
     }
   };
-  reader.readAsText(file, 'utf-8');
+reader.readAsText(file, 'utf-8');
 }
+
+/* เรียกตอนจบสุดของไฟล์เสมอ — เพื่อให้ const/function ของทุก Block (A/B/C/D) ถูกประกาศครบก่อนแอปเริ่มทำงานจริง */
+bootApp();
 </script>
 
 </body>
