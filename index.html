@@ -1802,14 +1802,19 @@
       <input type="text" class="form-input" id="input-store-name" placeholder="เช่น ร้าน A - ขายแว่น">
     </div>
 
-<div class="form-group">
+    <div class="form-group">
+      <label class="form-label">code (สุ่มอัตโนมัติ แก้ไขไม่ได้)</label>
+      <input type="text" class="form-input" id="input-room-code" readonly>
+    </div>
+
+    <div class="form-group">
       <label class="form-label">เลือกสี</label>
-      <div class="swatch-row" id="owner-color-swatch-row"></div>
+      <div class="swatch-row" id="color-swatch-row"></div>
     </div>
 
     <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal('modal-owner')">ยกเลิก</button>
-      <button class="btn btn-primary" onclick="submitOwner()">บันทึก</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-create-store')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitCreateStore()">สร้างร้าน</button>
     </div>
   </div>
 </div>
@@ -1966,11 +1971,6 @@
     <div class="form-group">
       <label class="form-label">เลือกสี</label>
       <div class="swatch-row" id="owner-color-swatch-row"></div>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">เลือกไอคอน</label>
-      <div class="icon-row" id="owner-icon-choice-row"></div>
     </div>
 
     <div class="modal-actions">
