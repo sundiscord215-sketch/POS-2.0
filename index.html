@@ -5532,8 +5532,8 @@ let _paidCountdownInterval = null;
 function startPaidCountdown() {
   clearPaidCountdown();
   let remaining = 3;
-  const el = document.getElementById('paid-countdown');
-  if (el) el.textContent = remaining;
+  const countEl = document.getElementById('paid-undo-count');
+  if (countEl) countEl.textContent = remaining;
 
   _paidCountdownInterval = setInterval(() => {
     remaining--;
@@ -5546,10 +5546,9 @@ function startPaidCountdown() {
       }
       return;
     }
-    if (el) el.textContent = remaining;
+    if (countEl) countEl.textContent = remaining;
   }, 1000);
 }
-
 function clearPaidCountdown() {
   if (_paidCountdownInterval) {
     clearInterval(_paidCountdownInterval);
