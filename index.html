@@ -771,8 +771,36 @@
     gap: 12px;
     align-content: start;
   }
-  @media (min-width: 480px) {
+@media (min-width: 480px) {
     .pos-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  /* ── แถบตัวกรองหมวดหมู่สินค้า (เหนือกริดสินค้า) ── */
+  .pos-category-filter-row {
+    display: none;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 12px 14px 2px;
+    flex-shrink: 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .pos-category-filter-row::-webkit-scrollbar { display: none; }
+  .pos-filter-chip {
+    flex-shrink: 0;
+    padding: 8px 15px;
+    border-radius: 999px;
+    background: var(--surface2);
+    border: 1.5px solid transparent;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .pos-filter-chip.selected {
+    background: var(--text);
+    color: #fff;
+    border-color: var(--text);
   }
 
   /* แผงตะกร้าด้านขวา — โชว์เฉพาะจอกว้าง (iPad ขึ้นไป) */
@@ -1439,7 +1467,10 @@
        ══════════════════════════════════════════════ -->
   <div id="page-pos" class="page">
     <div class="pos-layout">
-      <div class="pos-left">
+<div class="pos-left">
+        <div class="pos-category-filter-row" id="pos-category-filter-row">
+          <!-- render โดย renderPOSCategoryFilter() -->
+        </div>
         <div class="pos-grid" id="pos-product-grid">
           <!-- render โดย renderPOSGrid() -->
         </div>
@@ -1598,8 +1629,9 @@
   <!-- ══════════════════════════════════════════════
        PAGE: หน้าขาย ฝั่งพนักงาน (ไม่มีต้นทุน/กำไร/ปุ่มจัดการร้าน)
        ══════════════════════════════════════════════ -->
-  <div id="page-employee-pos" class="page" style="background:var(--bg); position:relative;">
-    <div class="pos-grid" id="employee-pos-grid"></div>
+ <div id="page-employee-pos" class="page" style="background:var(--bg); position:relative; flex-direction:column;">
+    <div class="pos-category-filter-row" id="employee-category-filter-row"></div>
+    <div class="pos-grid" id="employee-pos-grid" style="flex:1; min-height:0;"></div>
     <button class="cart-bar" id="employee-cart-bar" onclick="openEmployeeCartSheet()">
       <span class="cart-bar-count" id="employee-cart-bar-count">0</span>
       <span class="cart-bar-label">ตะกร้า</span>
@@ -3750,6 +3782,8 @@ async function deleteProductConfirm(id) {
    ══════════════════════════════════════════════════════════════ */
 
 let _posProducts = [];   // cache สินค้าทั้งหมดของร้าน active (โหลดใหม่ทุกครั้งที่เข้า/รีเฟรชหน้าขาย)
+let _posCategories = []; // cache หมวดหมู่ทั้งหมดของร้าน active
+let _posActiveCategoryFilter = 'all'; // 'all' หรือ categoryId
 let _cart = {};          // { productId: qty }
 
 async function goToPOSPage() {
@@ -3771,9 +3805,11 @@ async function loadPOSProducts() {
   try {
     _posProducts = await dbGetAll('products');
     _posProducts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    _posCategories = await dbGetAll('categories');
   } catch (e) {
     console.error(e);
     _posProducts = [];
+    _posCategories = [];
     showToast('โหลดสินค้าไม่สำเร็จ');
   }
 }
@@ -3789,9 +3825,37 @@ function getCartTotal() {
   }, 0);
 }
 
+function renderPOSCategoryFilter() {
+  const row = document.getElementById('pos-category-filter-row');
+  if (!row) return;
+  if (_posCategories.length === 0) {
+    row.style.display = 'none';
+    row.innerHTML = '';
+    return;
+  }
+  row.style.display = 'flex';
+  const chips = [
+    `<button type="button" class="pos-filter-chip ${_posActiveCategoryFilter === 'all' ? 'selected' : ''}" onclick="pickPOSCategoryFilter('all')">ทั้งหมด</button>`
+  ].concat(_posCategories.map(c => `
+    <button type="button" class="pos-filter-chip ${_posActiveCategoryFilter === c.id ? 'selected' : ''}" onclick="pickPOSCategoryFilter('${c.id}')">${c.icon} ${escapeHtml(c.name)}</button>
+  `));
+  row.innerHTML = chips.join('');
+}
+
+function pickPOSCategoryFilter(categoryId) {
+  _posActiveCategoryFilter = categoryId;
+  renderPOSGrid();
+}
+
 function renderPOSGrid() {
+  renderPOSCategoryFilter();
+
   const container = document.getElementById('pos-product-grid');
   if (!container) return;
+
+  const filteredProducts = _posActiveCategoryFilter === 'all'
+    ? _posProducts
+    : _posProducts.filter(p => p.categoryId === _posActiveCategoryFilter);
 
   if (_posProducts.length === 0) {
     container.innerHTML = `
@@ -3804,7 +3868,12 @@ function renderPOSGrid() {
     return;
   }
 
-container.innerHTML = _posProducts.map(p => {
+  if (filteredProducts.length === 0) {
+    container.innerHTML = `<div class="sm-empty" style="grid-column:1/-1;">ไม่มีสินค้าในหมวดนี้</div>`;
+    return;
+  }
+
+container.innerHTML = filteredProducts.map(p => {
     const inCart = cartQtyOf(p.id);
     const outOfStock = p.stockEnabled && p.stock <= 0;
     const atMax = p.stockEnabled && inCart >= p.stock;
@@ -4021,8 +4090,10 @@ function sendCatalogToEmployee(conn) {
     price: p.price,
     stockEnabled: p.stockEnabled,
     stock: p.stock,
+    categoryId: p.categoryId || null,
   }));
-  sendPeerMessage(conn, 'catalog', { products, roomCode: _peerRoomCode });
+  const categories = _posCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon }));
+  sendPeerMessage(conn, 'catalog', { products, categories, roomCode: _peerRoomCode });
 }
 
 /** พนักงานส่งใบเสร็จเข้ามา (ตอนออนไลน์ตอนขาย หรือดันคิวตอน reconnect)
@@ -4159,9 +4230,14 @@ async function handleCatalogFromHost(payload) {
     for (const p of payload.products) {
       await dbPut('products', p);
     }
+    await dbClear('categories');
+    for (const c of (payload.categories || [])) {
+      await dbPut('categories', c);
+    }
     // ถ้ากำลังอยู่หน้าขายของพนักงานอยู่ (Block D จะมีฟังก์ชันนี้) ให้รีเฟรชกริดสินค้า
     if (typeof renderEmployeePOSGrid === 'function') {
       _employeeProducts = await dbGetAll('products');
+      _employeeCategories = payload.categories || [];
       renderEmployeePOSGrid();
     }
   } catch (e) {
@@ -4286,6 +4362,8 @@ async function employeeFinalizeSale(cartItems, method, extra) {
    ══════════════════════════════════════════════════════════════ */
 
 let _employeeProducts = [];
+let _employeeCategories = [];
+let _employeeActiveCategoryFilter = 'all';
 let _employeeCart = {}; // { productId: qty }
 
 /** เรียกครั้งเดียวตอนเข้าหน้าขายพนักงานสำเร็จ (join ใหม่ หรือกลับเข้าแอปซ้ำ) */
@@ -4316,16 +4394,49 @@ function getEmployeeCartTotal() {
   }, 0);
 }
 
+function renderEmployeeCategoryFilter() {
+  const row = document.getElementById('employee-category-filter-row');
+  if (!row) return;
+  if (_employeeCategories.length === 0) {
+    row.style.display = 'none';
+    row.innerHTML = '';
+    return;
+  }
+  row.style.display = 'flex';
+  const chips = [
+    `<button type="button" class="pos-filter-chip ${_employeeActiveCategoryFilter === 'all' ? 'selected' : ''}" onclick="pickEmployeeCategoryFilter('all')">ทั้งหมด</button>`
+  ].concat(_employeeCategories.map(c => `
+    <button type="button" class="pos-filter-chip ${_employeeActiveCategoryFilter === c.id ? 'selected' : ''}" onclick="pickEmployeeCategoryFilter('${c.id}')">${c.icon} ${escapeHtml(c.name)}</button>
+  `));
+  row.innerHTML = chips.join('');
+}
+
+function pickEmployeeCategoryFilter(categoryId) {
+  _employeeActiveCategoryFilter = categoryId;
+  renderEmployeePOSGrid();
+}
+
 function renderEmployeePOSGrid() {
+  renderEmployeeCategoryFilter();
+
   const container = document.getElementById('employee-pos-grid');
   if (!container) return;
+
+  const filteredProducts = _employeeActiveCategoryFilter === 'all'
+    ? _employeeProducts
+    : _employeeProducts.filter(p => p.categoryId === _employeeActiveCategoryFilter);
 
   if (_employeeProducts.length === 0) {
     container.innerHTML = `<div class="sm-empty" style="grid-column:1/-1;">ยังไม่มีสินค้า<br>รอเจ้าของร้านเพิ่มสินค้า</div>`;
     return;
   }
 
-  container.innerHTML = _employeeProducts.map(p => {
+  if (filteredProducts.length === 0) {
+    container.innerHTML = `<div class="sm-empty" style="grid-column:1/-1;">ไม่มีสินค้าในหมวดนี้</div>`;
+    return;
+  }
+
+  container.innerHTML = filteredProducts.map(p => {
     const inCart = employeeCartQtyOf(p.id);
     const outOfStock = p.stockEnabled && p.stock <= 0;
     const atMax = p.stockEnabled && inCart >= p.stock;
