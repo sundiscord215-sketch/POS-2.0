@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, interactive-widget=resizes-content">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1531,7 +1531,7 @@
           <div class="ptb-amount" id="cash-total-amount">0 ฿</div>
         </div>
         <div class="cash-input-wrap">
-          <input type="number" inputmode="decimal" id="cash-received-input" placeholder="Amount received" oninput="renderCashChange()">
+          <input type="number" inputmode="decimal" id="cash-received-input" placeholder="Amount received" oninput="renderCashChange()" onfocus="this.scrollIntoView({behavior:'smooth', block:'center'})">
         </div>
         <div class="cash-quick-row" id="cash-quick-row"><!-- render โดย renderCashQuickButtons() --></div>
         <div class="cash-change-box" id="cash-change-box">
@@ -1718,7 +1718,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">รับเงินมา (บาท)</label>
-        <input type="number" inputmode="decimal" class="form-input" id="input-employee-cash-received" placeholder="0" oninput="renderEmployeeCashChange()">
+        <input type="number" inputmode="decimal" class="form-input" id="input-employee-cash-received" placeholder="0" oninput="renderEmployeeCashChange()" onfocus="this.scrollIntoView({behavior:'smooth', block:'center'})">
       </div>
       <div class="cash-change-box" id="employee-cash-change-box">
         <div class="ccb-label">เงินทอน</div>
