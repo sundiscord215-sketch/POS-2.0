@@ -4327,9 +4327,9 @@ async function handleCatalogFromHost(payload) {
     }
   } catch (e) {
     console.error('handleCatalogFromHost error', e);
+    showToast('⚠️ โหลดสินค้าไม่สำเร็จ: ' + (e.message || e));
   }
 }
-
 /** รับสต็อกอัปเดตสด (ตอนใครขายของไป ไม่ว่าจะขายจาก iPad หรือมือถือเครื่องอื่น) — patch เฉพาะ field สต็อก */
 async function handleStockUpdateFromHost(payload) {
   try {
