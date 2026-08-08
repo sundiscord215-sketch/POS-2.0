@@ -330,6 +330,8 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    padding: 0;
+    line-height: 1;
   }
   .sub-title { font-size: 17px; font-weight: 700; color: var(--text); }
 
@@ -1139,11 +1141,13 @@
     padding: 14px 16px 6px;
     flex-shrink: 0;
   }
-  .pay-back-btn {
+.pay-back-btn {
     width: 34px; height: 34px; border-radius: 50%;
     background: var(--surface); border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
     font-size: 16px; color: var(--text);
+    padding: 0;
+    line-height: 1;
   }
 
   /* จอ 2 คอลัมน์: ซ้าย = รายการบิล, ขวา = ฟอร์ม/QR */
@@ -1408,7 +1412,7 @@
       </div>
     </div>
    <button onclick="goToSalesHistoryPage()" style="background:none; border:none; color:var(--text-dim); font-size:13.5px; font-weight:700; padding:8px 0; margin-left:auto;">Receipt</button>
-    <button onclick="goToProductsPage()" style="background:none; border:none; color:var(--text-dim); font-size:13.5px; font-weight:700; padding:8px 0;">product</button>
+    <button onclick="goToProductsPage(false)" style="background:none; border:none; color:var(--text-dim); font-size:13.5px; font-weight:700; padding:8px 0;">product</button>
     <button id="settings-fab" onclick="openSettingsPanel();">⚙️</button>
   </div>
 
@@ -2091,14 +2095,9 @@
   <div class="modal-panel">
     <div class="modal-title" id="category-modal-title">เพิ่มหมวดหมู่</div>
 
-    <div class="form-group">
+<div class="form-group">
       <label class="form-label">ชื่อหมวดหมู่</label>
       <input type="text" class="form-input" id="input-category-name" placeholder="เช่น เครื่องประดับ">
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">เลือกไอคอน</label>
-      <div class="icon-row" id="category-icon-choice-row"></div>
     </div>
 
     <div class="modal-actions">
@@ -3092,6 +3091,7 @@ function goToOwnersPage() {
     showToast('กรุณาเลือก/สร้างร้านก่อน');
     return;
   }
+  _cameFromSettingsPanel = true;
   closeSettingsPanel();
   openSubPage('page-owners');
   renderOwnersList();
@@ -3272,10 +3272,10 @@ async function renderOwnersList() {
       return;
     }
     list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-    container.innerHTML = list.map(o => `
+container.innerHTML = list.map(o => `
       <div class="item-card">
-        <div class="item-icon" style="background:${o.color}22;">${o.icon}</div>
-        <div class="item-main" onclick="openEditOwnerModal('${o.id}')">
+        <div class="item-main" onclick="openEditOwnerModal('${o.id}')" style="display:flex; align-items:center; gap:10px;">
+          <span style="width:10px; height:10px; border-radius:50%; background:${o.color}; flex-shrink:0;"></span>
           <div class="item-name">${escapeHtml(o.name)}</div>
         </div>
         <button class="item-delete" onclick="deleteOwnerConfirm('${o.id}')">🗑</button>
@@ -3416,6 +3416,7 @@ function goToCategoriesPage() {
     showToast('กรุณาเลือก/สร้างร้านก่อน');
     return;
   }
+  _cameFromSettingsPanel = true;
   closeSettingsPanel();
   openSubPage('page-categories');
   renderCategoriesList();
@@ -3431,9 +3432,8 @@ async function renderCategoriesList() {
       return;
     }
     list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-    container.innerHTML = list.map(c => `
+  container.innerHTML = list.map(c => `
       <div class="item-card">
-        <div class="item-icon" style="background:var(--surface2);">${c.icon}</div>
         <div class="item-main" onclick="openEditCategoryModal('${c.id}')">
           <div class="item-name">${escapeHtml(c.name)}</div>
         </div>
@@ -3463,15 +3463,13 @@ function pickCategoryIcon(icon, btnEl) {
 function openCreateCategoryModal() {
   _editingCategoryId = null;
   _editingCategoryData = null;
-  _pendingCategoryIcon = ICON_OPTIONS[0];
+  _pendingCategoryIcon = '🏷️'; // เก็บไว้ในข้อมูลเฉยๆ ไม่แสดงผลแล้ว
 
   document.getElementById('category-modal-title').textContent = 'เพิ่มหมวดหมู่';
   document.getElementById('input-category-name').value = '';
-  renderCategoryIconRow();
 
   openModal('modal-category');
 }
-
 async function openEditCategoryModal(id) {
   const list = await dbGetAll('categories');
   const c = list.find(x => x.id === id);
@@ -3481,9 +3479,8 @@ async function openEditCategoryModal(id) {
   _editingCategoryData = c;
   _pendingCategoryIcon = c.icon;
 
-  document.getElementById('category-modal-title').textContent = 'แก้ไขหมวดหมู่';
+document.getElementById('category-modal-title').textContent = 'แก้ไขหมวดหมู่';
   document.getElementById('input-category-name').value = c.name;
-  renderCategoryIconRow();
 
   openModal('modal-category');
 }
@@ -3569,11 +3566,12 @@ let _productMaterialModalReturnFlag = false;
 let _productOwnerModalReturnFlag = false;
 let _productCategoryModalReturnFlag = false;
 
-function goToProductsPage() {
+function goToProductsPage(fromSettings) {
   if (!getActiveRoomCode()) {
     showToast('กรุณาเลือก/สร้างร้านก่อน');
     return;
   }
+  if (fromSettings !== false) _cameFromSettingsPanel = true;
   closeSettingsPanel();
   openSubPage('page-products');
   renderProductsList();
@@ -3599,8 +3597,8 @@ return `
           <div class="item-icon">${productThumbHtml(p)}</div>
           <div class="item-main" onclick="openEditProductModal('${p.id}')">
             <div class="item-name">${escapeHtml(p.name)}</div>
-            ${category ? `<div class="item-category-tag">${category.icon} ${escapeHtml(category.name)}</div>` : ''}
-            ${owner ? `<div class="item-owner-tag">${owner.icon} ${escapeHtml(owner.name)}</div>` : ''}
+           ${category ? `<div class="item-category-tag">${escapeHtml(category.name)}</div>` : ''}
+            ${owner ? `<div class="item-owner-tag">${escapeHtml(owner.name)}</div>` : ''}
             <div class="item-price-row">
               <span class="price">ขาย ${fmt(p.price)} ฿</span>
               <span class="profit ${profitClass}">กำไร ${fmt(p.profit)} ฿</span>
@@ -3736,9 +3734,9 @@ function removeProductImage() {
 /* ── เจ้าของสินค้า (chip, บังคับเลือก, มีปุ่มเพิ่มเจ้าของเสมอ) ── */
 function renderProductOwnerChips() {
   const row = document.getElementById('product-owner-chip-row');
-  const chips = _productModalOwners.map(o => `
+ const chips = _productModalOwners.map(o => `
     <button type="button" class="chip ${o.id === _pendingProductOwnerId ? 'selected' : ''}"
-      onclick="pickProductOwner('${o.id}')">${o.icon} ${escapeHtml(o.name)}</button>
+      onclick="pickProductOwner('${o.id}')">${escapeHtml(o.name)}</button>
   `).join('');
   row.innerHTML = chips + `<button type="button" class="chip add" onclick="openOwnerModalFromProduct()">+ เพิ่มเจ้าของ</button>`;
 }
@@ -3755,9 +3753,9 @@ function openOwnerModalFromProduct() {
 function renderProductCategoryChips() {
   const row = document.getElementById('product-category-chip-row');
   if (!row) return;
-  const chips = _productModalCategories.map(c => `
+const chips = _productModalCategories.map(c => `
     <button type="button" class="chip ${c.id === _pendingProductCategoryId ? 'selected' : ''}"
-      onclick="pickProductCategory('${c.id}')">${c.icon} ${escapeHtml(c.name)}</button>
+      onclick="pickProductCategory('${c.id}')">${escapeHtml(c.name)}</button>
   `).join('');
   row.innerHTML = chips + `<button type="button" class="chip add" onclick="openCategoryModalFromProduct()">+ เพิ่มหมวดหมู่</button>`;
 }
@@ -4010,8 +4008,8 @@ function renderPOSCategoryFilter() {
   row.style.display = 'flex';
   const chips = [
     `<button type="button" class="pos-filter-chip ${_posActiveCategoryFilter === 'all' ? 'selected' : ''}" onclick="pickPOSCategoryFilter('all')">All</button>`
-  ].concat(_posCategories.map(c => `
-    <button type="button" class="pos-filter-chip ${_posActiveCategoryFilter === c.id ? 'selected' : ''}" onclick="pickPOSCategoryFilter('${c.id}')">${c.icon} ${escapeHtml(c.name)}</button>
+ ].concat(_posCategories.map(c => `
+    <button type="button" class="pos-filter-chip ${_posActiveCategoryFilter === c.id ? 'selected' : ''}" onclick="pickPOSCategoryFilter('${c.id}')">${escapeHtml(c.name)}</button>
   `));
   row.innerHTML = chips.join('');
 }
@@ -4649,8 +4647,8 @@ function renderEmployeeCategoryFilter() {
   row.style.display = 'flex';
   const chips = [
     `<button type="button" class="pos-filter-chip ${_employeeActiveCategoryFilter === 'all' ? 'selected' : ''}" onclick="pickEmployeeCategoryFilter('all')">ทั้งหมด</button>`
-  ].concat(_employeeCategories.map(c => `
-    <button type="button" class="pos-filter-chip ${_employeeActiveCategoryFilter === c.id ? 'selected' : ''}" onclick="pickEmployeeCategoryFilter('${c.id}')">${c.icon} ${escapeHtml(c.name)}</button>
+ ].concat(_employeeCategories.map(c => `
+    <button type="button" class="pos-filter-chip ${_employeeActiveCategoryFilter === c.id ? 'selected' : ''}" onclick="pickEmployeeCategoryFilter('${c.id}')">${escapeHtml(c.name)}</button>
   `));
   row.innerHTML = chips.join('');
 }
@@ -5906,8 +5904,8 @@ async function renderSalesHistory() {
   const paymentRow = document.getElementById('history-payment-filter-row');
   const paymentOptions = [
     { key: 'all', label: 'ทั้งหมด' },
-    { key: 'cash', label: '💵 Cash' },
-    { key: 'qr', label: '📱 QR' },
+    { key: 'cash', label: 'Cash' },
+    { key: 'qr', label: 'QR' },
   ];
   paymentRow.style.display = 'flex';
   paymentRow.innerHTML = paymentOptions.map(opt => `
@@ -6022,7 +6020,7 @@ async function renderSummaryPage() {
     .sort((a, b) => b[1] - a[1])
     .map(([key, amount]) => {
       const owner = owners.find(o => o.id === key);
-      const name = owner ? `${owner.icon || '🧑‍💼'} ${owner.name}` : 'ไม่ระบุเจ้าของ';
+      const name = owner ? owner.name : 'ไม่ระบุเจ้าของ';
       return `<div class="summary-owner-row"><span class="so-name">${escapeHtml(name)}</span><span class="so-amount">${fmt(amount)} ฿</span></div>`;
     }).join('') || '<div class="sm-empty" style="padding:16px 0;">ยังไม่มียอดขาย</div>';
 
