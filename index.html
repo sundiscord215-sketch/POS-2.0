@@ -1622,7 +1622,7 @@
     <div class="form-group" style="width:100%; max-width:320px;">
       <input type="text" class="form-input" id="input-employee-name" placeholder="เช่น น้องพลอย">
     </div>
-    <button class="btn btn-primary" style="width:100%; max-width:320px;" onclick="submitEmployeeName()">ถัดไป</button>
+   <button class="btn btn-primary" style="width:100%; max-width:320px; flex:none;" onclick="submitEmployeeName()">ถัดไป</button>
   </div>
 
   <!-- ══════════════════════════════════════════════
@@ -1634,9 +1634,8 @@
     <div class="form-group" style="width:100%; max-width:320px;">
       <input type="text" class="form-input" id="input-join-room-code" placeholder="code 6 หลัก" style="text-transform:uppercase; letter-spacing:2px; text-align:center; font-weight:700;">
     </div>
-    <button class="btn btn-primary" style="width:100%; max-width:320px;" id="employee-join-btn" onclick="submitJoinRoom()">เข้าร้าน</button>
-    <button class="btn btn-secondary" style="width:100%; max-width:320px; margin-top:10px;" onclick="switchPage('page-mode-selector')">← กลับ</button>
-  </div>
+    <button class="btn btn-primary" style="width:100%; max-width:320px; flex:none;" id="employee-join-btn" onclick="submitJoinRoom()">เข้าร้าน</button>
+    <button class="btn btn-secondary" style="width:100%; max-width:320px; margin-top:10px; flex:none;" onclick="switchPage('page-mode-selector')">← กลับ</button>
 
   <!-- ══════════════════════════════════════════════
        PAGE: หน้าขาย ฝั่งพนักงาน (ไม่มีต้นทุน/กำไร/ปุ่มจัดการร้าน)
