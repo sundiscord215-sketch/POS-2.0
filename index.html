@@ -1802,24 +1802,14 @@
       <input type="text" class="form-input" id="input-store-name" placeholder="เช่น ร้าน A - ขายแว่น">
     </div>
 
-    <div class="form-group">
-      <label class="form-label">code (สุ่มอัตโนมัติ แก้ไขไม่ได้)</label>
-      <input type="text" class="form-input" id="input-room-code" readonly>
-    </div>
-
-    <div class="form-group">
+<div class="form-group">
       <label class="form-label">เลือกสี</label>
-      <div class="swatch-row" id="color-swatch-row"></div>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">เลือกไอคอน</label>
-      <div class="icon-row" id="icon-choice-row"></div>
+      <div class="swatch-row" id="owner-color-swatch-row"></div>
     </div>
 
     <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal('modal-create-store')">ยกเลิก</button>
-      <button class="btn btn-primary" onclick="submitCreateStore()">สร้างร้าน</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-owner')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitOwner()">บันทึก</button>
     </div>
   </div>
 </div>
@@ -2742,7 +2732,7 @@ function openCreateStoreModal() {
   document.getElementById('input-room-code').value = generateRoomCode();
 
   _pendingStoreColor = COLOR_PALETTE[0];
-  _pendingStoreIcon = ICON_OPTIONS[0];
+  _pendingStoreIcon = '🏪'; // fix ไอคอนเริ่มต้น ไม่ให้ผู้ใช้เลือกแล้ว
 
   const colorRow = document.getElementById('color-swatch-row');
   colorRow.innerHTML = COLOR_PALETTE.map((c, i) => `
@@ -2750,15 +2740,8 @@ function openCreateStoreModal() {
       data-color="${c}" onclick="pickColor('${c}', this)"></button>
   `).join('');
 
-  const iconRow = document.getElementById('icon-choice-row');
-  iconRow.innerHTML = ICON_OPTIONS.map((icon, i) => `
-    <button class="icon-choice ${i === 0 ? 'selected' : ''}"
-      data-icon="${icon}" onclick="pickIcon('${icon}', this)">${icon}</button>
-  `).join('');
-
   openModal('modal-create-store');
 }
-
 function pickColor(color, btnEl) {
   _pendingStoreColor = color;
   document.querySelectorAll('#color-swatch-row .swatch').forEach(el => el.classList.remove('selected'));
@@ -3171,12 +3154,11 @@ function openCreateOwnerModal() {
   _editingOwnerId = null;
   _editingOwnerData = null;
   _pendingOwnerColor = COLOR_PALETTE[0];
-  _pendingOwnerIcon = ICON_OPTIONS[0];
+  _pendingOwnerIcon = '🧑‍💼'; // fix ไอคอนเริ่มต้น ไม่ให้ผู้ใช้เลือกแล้ว
 
   document.getElementById('owner-modal-title').textContent = 'เพิ่มเจ้าของ';
   document.getElementById('input-owner-name').value = '';
   renderOwnerColorRow();
-  renderOwnerIconRow();
 
   openModal('modal-owner');
 }
@@ -3189,12 +3171,11 @@ async function openEditOwnerModal(id) {
   _editingOwnerId = id;
   _editingOwnerData = o;
   _pendingOwnerColor = o.color;
-  _pendingOwnerIcon = o.icon;
+  _pendingOwnerIcon = o.icon || '🧑‍💼'; // เผื่อของเก่ามีไอคอนอยู่แล้ว ก็คงไว้ตามเดิม
 
   document.getElementById('owner-modal-title').textContent = 'แก้ไขเจ้าของ';
   document.getElementById('input-owner-name').value = o.name;
   renderOwnerColorRow();
-  renderOwnerIconRow();
 
   openModal('modal-owner');
 }
