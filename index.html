@@ -5880,6 +5880,20 @@ function importStoreData(event) {
 reader.readAsText(file, 'utf-8');
 }
 
+/* ══════════════════════════════════════════════════════════════
+   GLOBAL ERROR CATCHER — กัน "จอขาวเงียบๆ" ตอนมี JS error
+   จะโชว์ toast บอก error message จริง แทนที่จะหยุดทำงานแบบไม่มีร่องรอย
+   ══════════════════════════════════════════════════════════════ */
+window.addEventListener('error', (e) => {
+  console.error('Uncaught error:', e.error || e.message);
+  showToast('⚠️ Error: ' + (e.message || 'unknown error'), 6000);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('Unhandled rejection:', e.reason);
+  const msg = (e.reason && e.reason.message) ? e.reason.message : String(e.reason);
+  showToast('⚠️ Error: ' + msg, 6000);
+});
+
 /* เรียกตอนจบสุดของไฟล์เสมอ — เพื่อให้ const/function ของทุก Block (A/B/C/D) ถูกประกาศครบก่อนแอปเริ่มทำงานจริง */
 bootApp();
 </script>
