@@ -6026,6 +6026,7 @@ async function renderSummaryPage() {
       ownerTotals[key].cost += unitCost * remainingQty;
     });
   });
+  const ownerMaxRevenue = Math.max(1, ...Object.values(ownerTotals).map(d => d.revenue));
   const ownerRowsHtml = Object.entries(ownerTotals)
     .sort((a, b) => b[1].revenue - a[1].revenue)
     .map(([key, data]) => {
@@ -6033,13 +6034,19 @@ async function renderSummaryPage() {
       const name = owner ? owner.name : 'ไม่ระบุเจ้าของ';
       const profit = data.revenue - data.cost;
       const profitColor = profit >= 0 ? 'var(--accent)' : 'var(--danger)';
-    return `
-        <div class="summary-owner-row">
-          <span class="so-name">${escapeHtml(name)}</span>
-          <span class="so-amount">
-            ${fmt(data.revenue)} ฿
-            <div class="so-profit" style="color:${profitColor};">กำไร ${fmt(profit)} ฿</div>
-          </span>
+      const barPct = (data.revenue / ownerMaxRevenue) * 100;
+      return `
+        <div style="margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:13.5px; gap:10px;">
+            <span style="color:var(--text); font-weight:600; flex:1; min-width:0;">${escapeHtml(name)}</span>
+            <span style="flex-shrink:0; text-align:right;">
+              <span style="color:var(--text); font-weight:700;">${fmt(data.revenue)} ฿</span>
+              <span style="color:${profitColor}; font-weight:700; font-size:11.5px; margin-left:6px;">กำไร ${fmt(profit)} ฿</span>
+            </span>
+          </div>
+          <div class="summary-payment-bar-track">
+            <div class="summary-payment-bar-fill" style="width:${barPct}%;"></div>
+          </div>
         </div>`;
     }).join('') || '<div class="sm-empty" style="padding:16px 0;">ยังไม่มียอดขาย</div>';
   // สินค้าขายดี
