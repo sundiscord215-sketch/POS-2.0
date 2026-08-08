@@ -2201,7 +2201,7 @@ function initPeerClient(roomCode, onOpen, onClose) {
     _peer.destroy();
   }
 
-  _peer = new Peer({ debug: 1 });
+_peer = new Peer(getOrCreateEmployeePeerId(), { debug: 1 });
 
   _peer.on('open', () => {
     _connectToHost(onOpen, onClose);
@@ -2209,6 +2209,14 @@ function initPeerClient(roomCode, onOpen, onClose) {
 
   _peer.on('error', (err) => {
     console.error('[peer] client peer error', err);
+    // Peer ID เดิมอาจยังไม่ถูกปล่อยจาก server (เพิ่งออกจากแอปไปไม่ถึง 30 วิ) — รอแป๊บแล้วลองใหม่
+    if (err.type === 'unavailable-id') {
+      setTimeout(() => {
+        if (_peerRole === 'client' && _peerRoomCode === roomCode) {
+          initPeerClient(roomCode, onOpen, onClose);
+        }
+      }, 3000);
+    }
   });
 
   _peer.on('disconnected', () => {
@@ -3759,6 +3767,17 @@ async function handleIncomingSale(saleFromEmployee, conn) {
 
 const EMPLOYEE_NAME_KEY = 'pos_employee_name';
 const EMPLOYEE_ROOM_KEY = 'pos_employee_room'; // แยกจาก ACTIVE_ROOM_KEY (ของฝั่งเจ้าของร้าน) โดยเจตนา
+const EMPLOYEE_PEER_ID_KEY = 'pos_employee_peer_id'; // Peer ID คงที่ต่อเครื่อง กันนับซ้ำตอนออก-เข้าใหม่
+
+/** คืน Peer ID เดิมของเครื่องนี้ ถ้ายังไม่เคยมีให้สร้างใหม่ครั้งเดียวแล้วจำไว้ */
+function getOrCreateEmployeePeerId() {
+  let id = localStorage.getItem(EMPLOYEE_PEER_ID_KEY);
+  if (!id) {
+    id = 'emp-' + uid();
+    localStorage.setItem(EMPLOYEE_PEER_ID_KEY, id);
+  }
+  return id;
+}
 
 function getEmployeeName() {
   return localStorage.getItem(EMPLOYEE_NAME_KEY) || '';
