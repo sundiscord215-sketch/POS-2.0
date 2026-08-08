@@ -1578,15 +1578,14 @@
 <!-- ══════════════════════════════════════════════
        PAGE: PAID (ชำระสำเร็จ)
        ══════════════════════════════════════════════ -->
-<div id="page-paid" class="page paid-page">
+<div id="page-paid" class="page paid-page" onclick="handlePaidPageTap(event)">
     <div class="sub-page-header" style="position:absolute; top:0; left:0; right:0; border-bottom:none; background:transparent; justify-content:flex-end;">
-      <button onclick="goToReceiptPage(_lastSaleId, true)" style="background:none; border:none; color:var(--text-dim); font-size:14px; font-weight:700; text-decoration:underline; padding:8px;">Receipt</button>
+      <button onclick="event.stopPropagation(); goToReceiptPage(_lastSaleId, true)" style="background:none; border:none; color:rgba(0,0,0,0.6); font-size:14px; font-weight:700; text-decoration:underline; padding:8px;">Receipt</button>
     </div>
-    <div class="paid-icon">✓</div>
-    <div class="paid-title">ชำระเงินสำเร็จ</div>
-    <div class="paid-amount" id="paid-amount">0 ฿</div>
-    <div class="paid-sub" id="paid-sub"></div>
-    <div class="paid-countdown" id="paid-countdown">3</div>
+    <div class="paid-label">PAID</div>
+    <div class="paid-amount-big" id="paid-amount">0</div>
+    <div class="paid-meta" id="paid-meta"></div>
+    <button class="paid-undo-btn" id="paid-undo-btn" onclick="event.stopPropagation(); undoLastSale()">Undo · <span id="paid-undo-count">1</span></button>
   </div>
   <!-- ══════════════════════════════════════════════
        PAGE: ใบเสร็จ (รายละเอียดบิล + คืนเงิน)
@@ -5460,6 +5459,7 @@ function confirmQRPayment() {
    ══════════════════════════════════════════════════════════════ */
 
 let _lastSaleId = null;
+let _lastSaleSnapshot = null; // { sale, cartSnapshot } — ใช้สำหรับปุ่ม Undo บนหน้า PAID
 
 async function finalizeSale(method, extra) {
   extra = extra || {};
@@ -5507,15 +5507,21 @@ return {
     return;
   }
 
+const allSales = await dbGetAll('sales');
+  const saleIndex = allSales.length;
+
   _cart = {};
   _lastSaleId = sale.id;
+  _lastSaleSnapshot = { sale, cartSnapshot: entries.reduce((acc, [pid, qty]) => { acc[pid] = qty; return acc; }, {}) };
   await loadPOSProducts();
   renderPOSCartPanel();
 
-document.getElementById('paid-amount').textContent = fmt(total) + ' ฿';
-  document.getElementById('paid-sub').textContent = method === 'cash'
+  document.getElementById('paid-amount').textContent = fmt(total);
+  const methodMeta = method === 'cash'
     ? `เงินสด · รับ ${fmt(extra.cashReceived)} ฿ ทอน ${fmt(extra.changeGiven)} ฿`
-    : 'พร้อมเพย์ (QR)';
+    : 'พร้อมเพย์ · ยังไม่ยืนยันสลิป';
+  document.getElementById('paid-meta').innerHTML =
+    `Sale ${sale.id.slice(0, 6).toUpperCase()} · #${saleIndex} · บันทึกในเครื่อง<br>${methodMeta}`;
   switchPage('page-paid');
   startPaidCountdown();
 }
@@ -5556,6 +5562,48 @@ function startNewSale() {
   renderCartBar();
   renderPOSCartPanel();
   switchPage('page-pos');
+}
+
+/** ปุ่ม "Undo" บนหน้า PAID — ลบรายการขายล่าสุด คืนสต็อก และคืนตะกร้าเดิมกลับมาให้แก้ไขใหม่ */
+async function undoLastSale() {
+  if (!_lastSaleSnapshot) {
+    switchPage('page-pos');
+    return;
+  }
+  clearPaidCountdown();
+  const { sale, cartSnapshot } = _lastSaleSnapshot;
+
+  try {
+    await dbDelete('sales', sale.id);
+    const currentProducts = await dbGetAll('products');
+    for (const it of sale.items) {
+      const p = currentProducts.find(x => x.id === it.productId);
+      if (p && p.stockEnabled) {
+        p.stock = p.stock + it.qty;
+        await dbPut('products', p);
+      }
+    }
+  } catch (e) {
+    console.error('undoLastSale error', e);
+    showToast('ยกเลิกรายการไม่สำเร็จ');
+    return;
+  }
+
+  _cart = cartSnapshot;
+  _lastSaleSnapshot = null;
+  await loadPOSProducts();
+  renderPOSGrid();
+  renderCartBar();
+  renderPOSCartPanel();
+  switchPage('page-pos');
+  showToast('ยกเลิกรายการขายแล้ว');
+}
+
+/** แตะพื้นหลังหน้า PAID (นอกปุ่ม) — ไปขายรายการถัดไปทันที ไม่ต้องรอนับถอยหลัง */
+function handlePaidPageTap(e) {
+  if (e.target.closest('button')) return;
+  clearPaidCountdown();
+  startNewSale();
 }
 
 
