@@ -1481,7 +1481,7 @@
 
       <!-- แผงตะกร้าขวา — จอกว้างเท่านั้น (โชว์ตลอด) -->
       <div class="pos-cart-panel" id="pos-cart-panel">
-        <div class="modal-title">ตะกร้าสินค้า</div>
+        <div class="modal-title">Cart</div>
         <div class="pcp-lines" id="pcp-lines">
           <!-- render โดย renderPOSCartPanel() -->
         </div>
@@ -1658,7 +1658,7 @@
        ══════════════════════════════════════════════ -->
   <div class="modal-overlay" id="modal-employee-cart">
     <div class="modal-panel">
-      <div class="modal-title">ตะกร้าสินค้า</div>
+      <div class="modal-title">Cart</div>
       <div id="employee-cart-lines-container"></div>
       <div class="cart-total-row">
         <span>ยอดรวม</span>
@@ -2006,11 +2006,11 @@
 </div>
 
 <!-- ══════════════════════════════════════════════
-     MODAL: ตะกร้าสินค้า (หน้าขาย)
+     MODAL: Cart (หน้าขาย)
      ══════════════════════════════════════════════ -->
 <div class="modal-overlay" id="modal-cart">
   <div class="modal-panel">
-    <div class="modal-title">ตะกร้าสินค้า</div>
+    <div class="modal-title">Cart</div>
 
     <div id="cart-lines-container">
       <!-- render โดย renderCartSheet() -->
@@ -3838,7 +3838,7 @@ function renderPOSCategoryFilter() {
   }
   row.style.display = 'flex';
   const chips = [
-    `<button type="button" class="pos-filter-chip ${_posActiveCategoryFilter === 'all' ? 'selected' : ''}" onclick="pickPOSCategoryFilter('all')">ทั้งหมด</button>`
+    `<button type="button" class="pos-filter-chip ${_posActiveCategoryFilter === 'all' ? 'selected' : ''}" onclick="pickPOSCategoryFilter('all')">All</button>`
   ].concat(_posCategories.map(c => `
     <button type="button" class="pos-filter-chip ${_posActiveCategoryFilter === c.id ? 'selected' : ''}" onclick="pickPOSCategoryFilter('${c.id}')">${c.icon} ${escapeHtml(c.name)}</button>
   `));
@@ -4011,7 +4011,7 @@ function renderPOSCartPanel() {
   const entries = Object.entries(_cart).filter(([, qty]) => qty > 0);
 
   if (entries.length === 0) {
-    linesEl.innerHTML = `<div class="sm-empty" style="margin:12px 0; font-size:13px;">ตะกร้าว่างเปล่า</div>`;
+    linesEl.innerHTML = `<div class="sm-empty" style="margin:12px 0; font-size:13px;">Cart is empty</div>`;
   } else {
     linesEl.innerHTML = entries.map(([pid, qty]) => {
       const p = _posProducts.find(x => x.id === pid);
@@ -4518,7 +4518,7 @@ function renderEmployeeCartSheet() {
   const entries = Object.entries(_employeeCart).filter(([, qty]) => qty > 0);
 
   if (entries.length === 0) {
-    container.innerHTML = `<div class="sm-empty" style="margin:12px 0;">ตะกร้าว่างเปล่า</div>`;
+    container.innerHTML = `<div class="sm-empty" style="margin:12px 0;">Cart is empty</div>`;
   } else {
     container.innerHTML = entries.map(([pid, qty]) => {
       const p = _employeeProducts.find(x => x.id === pid);
