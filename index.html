@@ -3677,10 +3677,15 @@ function ensureHostPeerRunning() {
 function onEmployeeConnected(conn) {
   showToast(`พนักงานเชื่อมต่อแล้ว (${Object.keys(_employeeConns).length} คน)`);
   sendCatalogToEmployee(conn);
+  setConnStatus(true); // มีพนักงานต่อติดอย่างน้อย 1 คน — โชว์ ● ออนไลน์ บน topnav ของ iPad
 }
 
 function onEmployeeDisconnected(conn) {
   showToast(`พนักงานหลุดการเชื่อมต่อ (เหลือ ${Object.keys(_employeeConns).length} คน)`);
+  // ถ้าไม่เหลือพนักงานต่อติดเลยสักคน ค่อยเปลี่ยนกลับเป็นออฟไลน์
+  if (Object.keys(_employeeConns).length === 0) {
+    setConnStatus(false);
+  }
 }
 
 /** ส่งสินค้าทั้งหมด (ไม่รวมต้นทุน/สูตรวัตถุดิบ — พนักงานเห็นแค่ชื่อ+ราคาขาย+สต็อก) ให้มือถือเครื่องเดียว */
