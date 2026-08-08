@@ -779,14 +779,15 @@
   }
 
   /* ── แถบตัวกรองหมวดหมู่สินค้า (เหนือกริดสินค้า) ── */
-  .pos-category-filter-row {
+ .pos-category-filter-row {
     display: none;
     gap: 8px;
     overflow-x: auto;
-    padding: 12px 14px 2px;
+    padding: 12px 14px;
     flex-shrink: 0;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    border-bottom: 1px solid var(--border);
   }
   .pos-category-filter-row::-webkit-scrollbar { display: none; }
   .pos-filter-chip {
@@ -830,12 +831,13 @@
       z-index: 20;
       box-shadow: -2px 0 12px rgba(0,0,0,0.06);
     }
-    .pos-cart-panel .pcp-title {
+   .pos-cart-panel .pcp-title {
       font-size: 15px; font-weight: 800; color: var(--text);
-      margin-bottom: 10px; flex-shrink: 0;
+      padding-bottom: 10px; margin-bottom: 10px; flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
     }
     .pos-cart-panel .pcp-lines { flex: 1; overflow-y: auto; min-height: 0; }
-    .pos-cart-panel .pcp-footer { flex-shrink: 0; padding-top: 10px; }
+    .pos-cart-panel .pcp-footer { flex-shrink: 0; padding-top: 10px; border-top: 1px solid var(--border); }
     .pos-cart-panel .pcp-total-row {
       display: flex; justify-content: space-between; align-items: center;
       padding: 10px 0; font-size: 15px; font-weight: 800; color: var(--text);
@@ -1371,7 +1373,7 @@
         </div>
       </div>
     </div>
-    <button onclick="goToSalesHistoryPage()" style="background:none; border:none; color:var(--text-dim); font-size:13.5px; font-weight:700; text-decoration:underline; padding:8px; margin-left:auto;">Receipt</button>
+    <button onclick="goToSalesHistoryPage()" style="background:none; border:none; color:var(--text-dim); font-size:13.5px; font-weight:700; padding:8px 4px; margin-left:auto;">Receipt</button>
     <button id="settings-fab" onclick="openSettingsPanel();">⚙️</button>
   </div>
 
