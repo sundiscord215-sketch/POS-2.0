@@ -5418,8 +5418,22 @@ function renderReceiptPage(sale) {
 
   const canRefund = sale.refundStatus !== 'full';
 
+  const soldByHtml = `<div style="font-size:13.5px; font-weight:700; color:var(--text); margin-bottom:4px;">ขายโดย: ${escapeHtml(sale.employeeName || 'เจ้าของร้าน')}</div>`;
+
+  const cashDetailHtml = sale.paymentMethod === 'cash' ? `
+    <div class="receipt-line">
+      <span class="rl-name">รับมา</span>
+      <span class="rl-amount">${fmt(sale.cashReceived)}</span>
+    </div>
+    <div class="receipt-line">
+      <span class="rl-name">ทอนเงิน</span>
+      <span class="rl-amount">${fmt(sale.changeGiven)}</span>
+    </div>
+  ` : '';
+
   document.getElementById('receipt-body').innerHTML = `
-    <div class="receipt-meta">
+    <div class="receipt-meta" style="text-align:left;">
+      ${soldByHtml}
       <div class="rm-id">#${sale.id}</div>
       <div class="rm-date">${dateStr} · ${paymentLabel}</div>
       <div class="rm-status ${statusClass}">${statusLabel}</div>
@@ -5430,6 +5444,7 @@ function renderReceiptPage(sale) {
       <span class="rt-amount">${fmt(sale.total - (sale.refundedTotal || 0))} ฿</span>
     </div>
     ${sale.refundedTotal > 0 ? `<div style="text-align:right; font-size:12px; color:var(--text-dim); margin-top:-6px;">คืนเงินไปแล้ว ${fmt(sale.refundedTotal)} ฿</div>` : ''}
+    ${cashDetailHtml}
     ${canRefund ? `<button class="btn btn-secondary" style="width:100%; margin-top:20px;" onclick="openRefundModal()">↩️ คืนเงิน</button>` : ''}
   `;
 }
