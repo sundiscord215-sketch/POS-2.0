@@ -1514,25 +1514,25 @@
     </div>
     <div class="pay-layout">
       <div class="pay-bill-panel">
-        <div class="pbp-title">product</div>
+        <div class="pbp-title">Items</div>
         <div id="cash-bill-lines"><!-- render โดย renderPayBillLines() --></div>
       </div>
       <div class="pay-right">
         <div class="pay-total-box">
-          <div class="ptb-label">ยอดที่ต้องชำระ</div>
+          <div class="ptb-label">Amount Due</div>
           <div class="ptb-amount" id="cash-total-amount">0 ฿</div>
         </div>
         <div class="cash-input-wrap">
-          <input type="number" inputmode="decimal" id="cash-received-input" placeholder="รับเงินมา (บาท)" oninput="renderCashChange()">
+          <input type="number" inputmode="decimal" id="cash-received-input" placeholder="Amount received" oninput="renderCashChange()">
         </div>
         <div class="cash-quick-row" id="cash-quick-row"><!-- render โดย renderCashQuickButtons() --></div>
         <div class="cash-change-box" id="cash-change-box">
-          <div class="ccb-label">เงินทอน</div>
+         <div class="ccb-label">Change</div>
           <div class="ccb-amount" id="cash-change-amount">0 ฿</div>
         </div>
         <div class="pay-confirm-row">
-          <button class="btn btn-secondary" onclick="switchPage('page-pos')">ยกเลิก</button>
-          <button class="btn btn-primary" id="cash-confirm-btn" onclick="confirmCashPayment()">ยืนยันรับเงิน</button>
+          <button class="btn btn-secondary" onclick="switchPage('page-pos')">Cancel</button>
+<button class="btn btn-primary" id="cash-confirm-btn" onclick="confirmCashPayment()">Confirm</button>
         </div>
       </div>
     </div>
@@ -1679,7 +1679,7 @@
     <div class="modal-panel">
       <div class="modal-title">รับเงิน</div>
       <div class="form-group">
-        <label class="form-label">ยอดที่ต้องชำระ</label>
+        <label class="form-label">Amount Due</label>
         <div style="font-size:28px; font-weight:800; color:var(--cta); text-align:center; padding:10px 0;" id="employee-pay-total">0 ฿</div>
       </div>
       <div class="form-group">
@@ -2123,10 +2123,23 @@ function setConnStatus(online) {
 
 /* สลับหน้า (แทนที่ switchTab เดิม — ตอนนี้ไม่มี tab bar แล้ว
    หน้าอื่นๆ จะถูกเพิ่มเข้ามาในบล็อคถัดไปแล้ว list นี้จะยาวขึ้น) */
+const PAGES_WITHOUT_TOPNAV = new Set([
+  'page-mode-selector', 'page-pay-cash', 'page-pay-qr', 'page-paid',
+  'page-receipt', 'page-sales-history', 'page-summary',
+  'page-employee-name', 'page-employee-join', 'page-employee-pos', 'page-employee-receipts'
+]);
+
 function switchPage(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const target = document.getElementById(pageId);
   if (target) target.classList.add('active');
+
+  const topnav = document.getElementById('topnav');
+  if (PAGES_WITHOUT_TOPNAV.has(pageId)) {
+    topnav.classList.remove('show');
+  } else if (getActiveRoomCode()) {
+    topnav.classList.add('show');
+  }
 }
 
 /* Modal helpers — เผื่อไว้สำหรับบล็อคถัดไป (ยังไม่มี modal ใน DOM ตอนนี้) */
@@ -5050,7 +5063,7 @@ function renderCashQuickButtons() {
   const rounded = Array.from(candidates).filter(v => v > total).sort((a, b) => a - b).slice(0, 3);
   const finalList = [total, ...rounded].slice(0, 4);
   container.innerHTML = finalList.map(v =>
-    `<button class="cash-quick-btn" onclick="setCashReceived(${v})">${v === total ? 'พอดี' : fmt(v)}</button>`
+    `<button class="cash-quick-btn" onclick="setCashReceived(${v})">${v === total ? 'Exact' : fmt(v)}</button>`
   ).join('');
 }
 
@@ -5071,7 +5084,7 @@ function renderCashChange() {
     amountEl.textContent = '0 ฿';
     box.classList.remove('insufficient');
   } else if (change < 0) {
-    amountEl.textContent = 'ขาดอีก ' + fmt(Math.abs(change)) + ' ฿';
+    amountEl.textContent = 'Short by ' + fmt(Math.abs(change)) + ' ฿';
     box.classList.add('insufficient');
   } else {
     amountEl.textContent = fmt(change) + ' ฿';
