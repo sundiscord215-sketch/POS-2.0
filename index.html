@@ -1321,14 +1321,17 @@
     padding: 16px; margin-bottom: 12px; text-align: center;
   }
   .summary-card .sc-label { font-size: 12.5px; color: var(--text-dim); }
-  .summary-card .sc-value { font-size: 26px; font-weight: 800; color: var(--text); margin-top: 4px; }
+  .summary-card .sc-value { font-size: 30px; font-weight: 800; color: var(--text); margin-top: 4px; font-variant-numeric: tabular-nums; }
   .summary-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .summary-owner-row {
     display: flex; justify-content: space-between; align-items: center;
     padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13.5px;
   }
   .summary-owner-row .so-name { color: var(--text); font-weight: 600; }
-  .summary-owner-row .so-amount { color: var(--text); font-weight: 700; }
+  .summary-owner-row .so-amount { color: var(--text); font-weight: 700; flex-shrink: 0; }
+  .summary-payment-bar-track { height: 8px; background: var(--surface2); border-radius: 999px; overflow: hidden; margin-top: 5px; }
+  .summary-payment-bar-fill { height: 100%; background: var(--accent); border-radius: 999px; }
+  .summary-section-title { font-size: 13.5px; font-weight: 700; color: var(--text); margin: 22px 0 4px; }
 
   .refund-qty-row {
     display: flex; align-items: center; gap: 10px; padding: 10px 0;
@@ -1612,14 +1615,25 @@
   </div>
 
   <!-- ══════════════════════════════════════════════
-       PAGE: สรุปยอด / Export-Import
+       PAGE: สรุปยอด
        ══════════════════════════════════════════════ -->
   <div id="page-summary" class="page summary-page">
     <div class="sub-page-header">
       <button class="pay-back-btn" onclick="closeSubPage()">←</button>
-      <div class="sph-title">สรุปยอด / ข้อมูล</div>
+      <div class="sph-title">สรุปยอดขาย</div>
     </div>
     <div class="sub-page-body" id="summary-body"><!-- render โดย renderSummaryPage() --></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: นำเข้า-ส่งออกข้อมูล
+       ══════════════════════════════════════════════ -->
+  <div id="page-data" class="page summary-page">
+    <div class="sub-page-header">
+      <button class="pay-back-btn" onclick="closeSubPage()">←</button>
+      <div class="sph-title">นำเข้า-ส่งออกข้อมูล</div>
+    </div>
+    <div class="sub-page-body" id="data-body"><!-- render โดย renderDataPage() --></div>
   </div>
 
 <!-- ══════════════════════════════════════════════
@@ -1816,14 +1830,18 @@
     </div>
 
     <!-- หมวด 3: ข้อมูล/รายงาน -->
-    <div class="sp-category">
-      <div class="sp-category-row" onclick="closeSettingsPanel(); goToSummaryPage();">
+    <div class="sp-category" id="sp-category-data">
+      <div class="sp-category-row" onclick="toggleCategory('sp-category-data')">
         <div class="sp-icon">📊</div>
         <div class="sp-main">
           <div class="sp-label">ข้อมูล / รายงาน</div>
-          <div class="sp-sub">สรุปยอด · Export / Import</div>
+          <div class="sp-sub">สรุปยอด · นำเข้า-ส่งออกข้อมูล</div>
         </div>
         <div class="sp-chevron">›</div>
+      </div>
+      <div class="sp-detail">
+        <button class="sp-detail-btn" onclick="closeSettingsPanel(); goToSummaryPage();">📈 สรุปยอดขาย</button>
+        <button class="sp-detail-btn" onclick="closeSettingsPanel(); goToDataPage();">💾 นำเข้า-ส่งออกข้อมูล</button>
       </div>
     </div>
 
@@ -5890,13 +5908,40 @@ function goToSummaryPage() {
   renderSummaryPage();
 }
 
+function goToDataPage() {
+  if (!getActiveRoomCode()) { showToast('กรุณาเลือก/สร้างร้านก่อน'); return; }
+  _cameFromSettingsPanel = true;
+  openSubPage('page-data');
+  renderDataPage();
+}
+
+function renderDataPage() {
+  const container = document.getElementById('data-body');
+  if (!container) return;
+  container.innerHTML = `
+    <div style="font-size:13.5px; color:var(--text-dim); margin-bottom:16px; line-height:1.6;">
+      สำรองข้อมูลร้านนี้ทั้งหมด (วัตถุดิบ · เจ้าของ · หมวดหมู่ · สินค้า · ประวัติการขาย) ลงไฟล์ .json หรือย้ายข้อมูลไปเปิดในเครื่องอื่น
+    </div>
+    <button class="btn btn-secondary" style="width:100%; margin-bottom:10px;" onclick="exportStoreData()">⬇️ Export ข้อมูลร้านนี้ (.json)</button>
+    <button class="btn btn-secondary" style="width:100%;" onclick="document.getElementById('import-file-input').click()">⬆️ Import ข้อมูล (.json)</button>
+    <input type="file" id="import-file-input" accept="application/json" style="display:none;" onchange="importStoreData(event)">
+  `;
+}
+
+let _summaryPeriod = 'today'; // 'today' | 'all'
+
+function pickSummaryPeriod(period) {
+  _summaryPeriod = period;
+  renderSummaryPage();
+}
+
 async function renderSummaryPage() {
   const container = document.getElementById('summary-body');
   container.innerHTML = '<div class="sm-empty">กำลังโหลด...</div>';
 
-  let sales, owners;
+  let sales, owners, products;
   try {
-    [sales, owners] = await Promise.all([dbGetAll('sales'), dbGetAll('owners')]);
+    [sales, owners, products] = await Promise.all([dbGetAll('sales'), dbGetAll('owners'), dbGetAll('products')]);
   } catch (e) {
     console.error(e);
     container.innerHTML = '<div class="sm-empty">โหลดข้อมูลไม่สำเร็จ</div>';
@@ -5904,62 +5949,116 @@ async function renderSummaryPage() {
   }
 
   const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
-  const todaySales = sales.filter(s => s.createdAt >= startOfToday.getTime());
+  const filteredSales = _summaryPeriod === 'today'
+    ? sales.filter(s => s.createdAt >= startOfToday.getTime())
+    : sales;
 
   function netTotal(s) { return s.total - (s.refundedTotal || 0); }
-  const todayRevenue = todaySales.reduce((sum, s) => sum + netTotal(s), 0);
-  const todayCount = todaySales.length;
-  const allRevenue = sales.reduce((sum, s) => sum + netTotal(s), 0);
-  const allCount = sales.length;
+  const totalRevenue = filteredSales.reduce((sum, s) => sum + netTotal(s), 0);
+  const orderCount = filteredSales.length;
 
-  // สรุปยอดวันนี้ แยกตามเจ้าของ (อิงจากสินค้าที่ยังอยู่ในระบบตอนนี้)
+  // ยอดขายของแต่ละคน
   const ownerTotals = {};
-  const products = await dbGetAll('products');
-  todaySales.forEach(s => {
+  filteredSales.forEach(s => {
     s.items.forEach(it => {
       const remainingQty = it.qty - (it.refundedQty || 0);
       if (remainingQty <= 0) return;
       const p = products.find(x => x.id === it.productId);
-      const ownerId = p ? p.ownerId : null;
-      const key = ownerId || '_none';
+      const key = (p && p.ownerId) || '_none';
       ownerTotals[key] = (ownerTotals[key] || 0) + it.price * remainingQty;
     });
   });
-  const ownerRowsHtml = Object.entries(ownerTotals).map(([key, amount]) => {
-    const owner = owners.find(o => o.id === key);
-    const name = owner ? `${owner.icon || '🧑‍💼'} ${owner.name}` : 'ไม่ระบุเจ้าของ';
-    return `<div class="summary-owner-row"><span class="so-name">${escapeHtml(name)}</span><span class="so-amount">${fmt(amount)} ฿</span></div>`;
-  }).join('') || '<div class="sm-empty" style="padding:16px 0;">ยังไม่มียอดขายวันนี้</div>';
+  const ownerRowsHtml = Object.entries(ownerTotals)
+    .sort((a, b) => b[1] - a[1])
+    .map(([key, amount]) => {
+      const owner = owners.find(o => o.id === key);
+      const name = owner ? `${owner.icon || '🧑‍💼'} ${owner.name}` : 'ไม่ระบุเจ้าของ';
+      return `<div class="summary-owner-row"><span class="so-name">${escapeHtml(name)}</span><span class="so-amount">${fmt(amount)} ฿</span></div>`;
+    }).join('') || '<div class="sm-empty" style="padding:16px 0;">ยังไม่มียอดขาย</div>';
+
+  // สินค้าขายดี
+  const productTotals = {};
+  filteredSales.forEach(s => {
+    s.items.forEach(it => {
+      const remainingQty = it.qty - (it.refundedQty || 0);
+      if (remainingQty <= 0) return;
+      if (!productTotals[it.productId]) productTotals[it.productId] = { name: it.name, qty: 0, revenue: 0 };
+      productTotals[it.productId].qty += remainingQty;
+      productTotals[it.productId].revenue += it.price * remainingQty;
+    });
+  });
+  const topSellers = Object.values(productTotals).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+  const topSellersHtml = topSellers.length > 0 ? topSellers.map((p, i) => `
+    <div class="summary-owner-row">
+      <span class="so-name">${i + 1}. ${escapeHtml(p.name)} <span style="color:var(--text-dim); font-weight:400;">× ${fmt(p.qty)}</span></span>
+      <span class="so-amount">${fmt(p.revenue)} ฿</span>
+    </div>
+  `).join('') : '<div class="sm-empty" style="padding:16px 0;">ยังไม่มียอดขาย</div>';
+
+  // ช่องทางชำระเงิน: เงินสด vs เงินโอน (QR)
+  const paymentTotals = { cash: { revenue: 0, count: 0 }, qr: { revenue: 0, count: 0 } };
+  filteredSales.forEach(s => {
+    const method = s.paymentMethod === 'qr' ? 'qr' : 'cash';
+    paymentTotals[method].revenue += netTotal(s);
+    paymentTotals[method].count += 1;
+  });
+  const paymentMax = Math.max(paymentTotals.cash.revenue, paymentTotals.qr.revenue, 1);
+  const paymentRow = (label, icon, data) => `
+    <div style="margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; font-size:13.5px;">
+        <span style="color:var(--text); font-weight:600;">${icon} ${label} · ${fmt(data.count)} บิล</span>
+        <span style="color:var(--text); font-weight:700;">${fmt(data.revenue)} ฿</span>
+      </div>
+      <div class="summary-payment-bar-track">
+        <div class="summary-payment-bar-fill" style="width:${(data.revenue / paymentMax) * 100}%;"></div>
+      </div>
+    </div>`;
 
   container.innerHTML = `
+    <div class="pos-category-filter-row" style="display:flex; padding:0 0 14px; border-bottom:none;">
+      <button type="button" class="pos-filter-chip ${_summaryPeriod === 'today' ? 'selected' : ''}" onclick="pickSummaryPeriod('today')">วันนี้</button>
+      <button type="button" class="pos-filter-chip ${_summaryPeriod === 'all' ? 'selected' : ''}" onclick="pickSummaryPeriod('all')">ทั้งหมด</button>
+    </div>
+
     <div class="summary-row-2">
       <div class="summary-card">
-        <div class="sc-label">ยอดขายวันนี้</div>
-        <div class="sc-value">${fmt(todayRevenue)}</div>
+        <div class="sc-label">ยอดขายรวม</div>
+        <div class="sc-value">${fmt(totalRevenue)}</div>
       </div>
       <div class="summary-card">
-        <div class="sc-label">บิลวันนี้</div>
-        <div class="sc-value">${fmt(todayCount)}</div>
+        <div class="sc-label">จำนวนบิล</div>
+        <div class="sc-value">${fmt(orderCount)}</div>
       </div>
     </div>
-    <div class="summary-row-2">
-      <div class="summary-card">
-        <div class="sc-label">ยอดขายรวมทั้งหมด</div>
-        <div class="sc-value">${fmt(allRevenue)}</div>
-      </div>
-      <div class="summary-card">
-        <div class="sc-label">บิลทั้งหมด</div>
-        <div class="sc-value">${fmt(allCount)}</div>
-      </div>
-    </div>
-    <div style="font-size:13.5px; font-weight:700; color:var(--text); margin:18px 0 4px;">แยกตามเจ้าของ (วันนี้)</div>
+
+    <div class="summary-section-title">ยอดขายของแต่ละคน</div>
     <div>${ownerRowsHtml}</div>
 
-    <div style="font-size:13.5px; font-weight:700; color:var(--text); margin:22px 0 4px;">ข้อมูล</div>
-    <button class="btn btn-secondary" style="width:100%; margin-bottom:10px;" onclick="exportStoreData()">⬇️ Export ข้อมูลร้านนี้ (.json)</button>
-    <button class="btn btn-secondary" style="width:100%;" onclick="document.getElementById('import-file-input').click()">⬆️ Import ข้อมูล (.json)</button>
-    <input type="file" id="import-file-input" accept="application/json" style="display:none;" onchange="importStoreData(event)">
+    <div class="summary-section-title">สินค้าขายดี</div>
+    <div>${topSellersHtml}</div>
+
+    <div class="summary-section-title" style="margin-bottom:10px;">ช่องทางชำระเงิน</div>
+    ${paymentRow('เงินสด', '💵', paymentTotals.cash)}
+    ${paymentRow('เงินโอน (QR)', '📱', paymentTotals.qr)}
+
+    <button class="btn" style="width:100%; margin-top:24px; background:rgba(239,68,68,0.1); color:var(--danger);" onclick="resetSalesHistory()">🔄 รีเซ็ตยอดขาย</button>
   `;
+}
+
+/** รีเซ็ตยอดขาย — ลบเฉพาะประวัติการขาย ('sales') ไม่แตะสินค้า/วัตถุดิบ/เจ้าของ */
+async function resetSalesHistory() {
+  const roomCode = getActiveRoomCode();
+  if (!roomCode) return;
+  const ok = confirm('รีเซ็ตยอดขาย?\n\nประวัติการขายทั้งหมดของร้านนี้จะถูกลบถาวร (สินค้า/วัตถุดิบ/เจ้าของยังอยู่ครบ) ไม่สามารถกู้คืนได้');
+  if (!ok) return;
+  try {
+    await dbClear('sales');
+    renderSummaryPage();
+    showToast('รีเซ็ตยอดขายเรียบร้อย');
+  } catch (e) {
+    console.error(e);
+    showToast('รีเซ็ตไม่สำเร็จ');
+  }
 }
 
 async function exportStoreData() {
@@ -6008,8 +6107,9 @@ function importStoreData(event) {
           await dbPut(storeName, row);
         }
       }
-      await loadPOSProducts();
-      renderSummaryPage();
+     await loadPOSProducts();
+      const current = document.querySelector('.page.active');
+      if (current && current.id === 'page-summary') renderSummaryPage();
       showToast('Import สำเร็จ');
     } catch (err) {
       console.error(err);
