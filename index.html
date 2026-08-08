@@ -1640,7 +1640,15 @@
   <!-- ══════════════════════════════════════════════
        PAGE: หน้าขาย ฝั่งพนักงาน (ไม่มีต้นทุน/กำไร/ปุ่มจัดการร้าน)
        ══════════════════════════════════════════════ -->
- <div id="page-employee-pos" class="page" style="background:var(--bg); position:relative; flex-direction:column;">
+<div id="page-employee-pos" class="page" style="background:var(--bg); position:relative; flex-direction:column;">
+    <div id="employee-conn-fail-banner" style="display:none; align-items:center; gap:10px; padding:12px 16px; background:rgba(239,68,68,0.1); border-bottom:1.5px solid var(--danger);">
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:13.5px; font-weight:700; color:var(--danger);">เชื่อมต่อร้านไม่ได้</div>
+        <div style="font-size:12px; color:var(--text-dim); margin-top:2px;">ตรวจสอบว่า iPad เปิดแอปค้างไว้ที่หน้า "ขาย" และต่อเน็ตอยู่</div>
+      </div>
+      <button style="flex-shrink:0; padding:8px 12px; border-radius:8px; background:var(--danger); color:#fff; font-size:12.5px; font-weight:700;" onclick="retryEmployeeConnection()">ลองใหม่</button>
+      <button style="flex-shrink:0; padding:8px 12px; border-radius:8px; background:var(--surface2); color:var(--text); font-size:12.5px; font-weight:700;" onclick="changeEmployeeRoomCode()">เปลี่ยน code</button>
+    </div>
     <div class="pos-category-filter-row" id="employee-category-filter-row"></div>
     <div class="pos-grid" id="employee-pos-grid" style="flex:1; min-height:0;"></div>
     <button class="cart-bar" id="employee-cart-bar" onclick="openEmployeeCartSheet()">
@@ -4294,7 +4302,12 @@ async function joinEmployeeRoom(roomCode) {
 }
 
 /** ต่อกับ iPad สำเร็จ (ครั้งแรก หรือ reconnect) — ดันคิวใบเสร็จค้าง แล้วรอ catalog/stock ล่าสุดจาก host */
+let _employeeConnectFailCount = 0;
+const EMPLOYEE_CONN_FAIL_THRESHOLD = 3; // ต่อไม่ติดติดกัน 3 ครั้ง (~15 วิ) ค่อยโชว์แบนเนอร์ ไม่ใช่ครั้งแรกครั้งเดียว
+
 function onHostConnected() {
+  _employeeConnectFailCount = 0;
+  hideEmployeeConnFailBanner();
   showToast('เชื่อมต่อกับร้านสำเร็จ');
   pushPendingSalesQueue();
   // ไม่ต้อง request catalog เอง — host ส่งให้อัตโนมัติทันทีที่ conn เปิด (ดู sendCatalogToEmployee ใน Block B)
@@ -4302,7 +4315,46 @@ function onHostConnected() {
 
 function onHostDisconnected() {
   // setConnStatus(false) ถูกเรียกให้แล้วจาก initPeerClient ภายใน — แค่แจ้งเตือนเพิ่มพอ
-  showToast('ขาดการเชื่อมต่อกับร้าน — ขายต่อได้ปกติ ระบบจะเชื่อมต่อใหม่อัตโนมัติ');
+  _employeeConnectFailCount++;
+  if (_employeeConnectFailCount >= EMPLOYEE_CONN_FAIL_THRESHOLD) {
+    showEmployeeConnFailBanner();
+  } else {
+    showToast('ขาดการเชื่อมต่อกับร้าน — กำลังลองเชื่อมต่อใหม่...');
+  }
+}
+
+function showEmployeeConnFailBanner() {
+  const el = document.getElementById('employee-conn-fail-banner');
+  if (el) el.style.display = 'flex';
+}
+
+function hideEmployeeConnFailBanner() {
+  const el = document.getElementById('employee-conn-fail-banner');
+  if (el) el.style.display = 'none';
+}
+
+/** ปุ่ม "ลองใหม่" บนแบนเนอร์ — เชื่อมต่อซ้ำทันทีโดยไม่ต้องรอ reconnect loop (ทุก 5 วิ) */
+function retryEmployeeConnection() {
+  const roomCode = getEmployeeRoomCode();
+  if (!roomCode) {
+    switchPage('page-employee-join');
+    return;
+  }
+  showToast('กำลังลองเชื่อมต่อใหม่...');
+  _connectToHost(onHostConnected, onHostDisconnected);
+}
+
+/** ปุ่ม "เปลี่ยน code" บนแบนเนอร์ — เผื่อ code เดิมผิด/ร้านเปลี่ยน code ใหม่ */
+function changeEmployeeRoomCode() {
+  clearEmployeeRoomCode();
+  teardownPeer();
+  hideEmployeeConnFailBanner();
+  _employeeConnectFailCount = 0;
+  const input = document.getElementById('input-join-room-code');
+  if (input) input.value = '';
+  const sub = document.getElementById('employee-join-sub');
+  if (sub) sub.textContent = 'กรอกcodeที่ได้จากเจ้าของร้าน';
+  switchPage('page-employee-join');
 }
 
 /** รับ catalog เต็มจาก host — เขียนทับ local cache ทั้งหมด (ไม่มีต้นทุน/กำไรติดมาอยู่แล้วเพราะ host กรองออกแล้ว) */
