@@ -503,7 +503,7 @@
     justify-content: center;
   }
   .modal-overlay.open { display: flex; }
-  .modal-panel {
+.modal-panel {
     background: var(--surface);
     width: 100%;
     max-width: 480px;
@@ -512,6 +512,49 @@
     border-radius: 18px 18px 0 0;
     padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
   }
+
+  /* ── โมดัล วัตถุดิบ/สินค้า แบบเต็มจอ ── */
+  #modal-material.modal-overlay,
+  #modal-product.modal-overlay {
+    align-items: stretch;
+    justify-content: stretch;
+  }
+  #modal-material .modal-panel,
+  #modal-product .modal-panel {
+    max-width: none;
+    max-height: none;
+    width: 100%;
+    height: 100dvh;
+    border-radius: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .modal-fullpage-header {
+    height: var(--nav-h);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-fullpage-title { font-size: 17px; font-weight: 700; color: var(--text); }
+  .modal-fullpage-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 18px 16px 24px;
+  }
+  .modal-fullpage-footer {
+    flex-shrink: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  .modal-fullpage-footer .modal-actions { margin-top: 0; }
   .modal-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
   .form-group { margin-bottom: 16px; }
   .form-label { font-size: 13px; color: var(--text-dim); margin-bottom: 6px; display: block; }
@@ -1692,8 +1735,12 @@
      ══════════════════════════════════════════════ -->
 <div class="modal-overlay" id="modal-product">
   <div class="modal-panel">
-    <div class="modal-title" id="product-modal-title">เพิ่มสินค้า</div>
+    <div class="modal-fullpage-header">
+      <button class="sub-back" onclick="closeModal('modal-product')">←</button>
+      <div class="modal-fullpage-title" id="product-modal-title">เพิ่มสินค้า</div>
+    </div>
 
+    <div class="modal-fullpage-body">
     <div class="form-group">
       <label class="form-label">ชื่อสินค้า</label>
       <input type="text" class="form-input" id="input-product-name" placeholder="เช่น แว่นกันแดดลาย A">
@@ -1749,9 +1796,13 @@
       <input type="number" inputmode="decimal" class="form-input" id="input-product-stock-qty" placeholder="0">
     </div>
 
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal('modal-product')">ยกเลิก</button>
-      <button class="btn btn-primary" onclick="submitProduct()">บันทึก</button>
+</div>
+
+    <div class="modal-fullpage-footer">
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-product')">ยกเลิก</button>
+        <button class="btn btn-primary" onclick="submitProduct()">บันทึก</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1761,36 +1812,43 @@
      ══════════════════════════════════════════════ -->
 <div class="modal-overlay" id="modal-material">
   <div class="modal-panel">
-    <div class="modal-title" id="material-modal-title">เพิ่มวัตถุดิบ</div>
-
-    <div class="form-group">
-      <label class="form-label">ชื่อวัตถุดิบ</label>
-      <input type="text" class="form-input" id="input-material-name" placeholder="เช่น ลูกปัดแก้ว">
+    <div class="modal-fullpage-header">
+      <button class="sub-back" onclick="closeModal('modal-material')">←</button>
+      <div class="modal-fullpage-title" id="material-modal-title">เพิ่มวัตถุดิบ</div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">ราคาที่ซื้อทั้งหมด (บาท)</label>
-      <input type="number" inputmode="decimal" class="form-input" id="input-material-total-cost"
-        placeholder="0" oninput="updateMaterialUnitCostPreview()">
+    <div class="modal-fullpage-body">
+      <div class="form-group">
+        <label class="form-label">ชื่อวัตถุดิบ</label>
+        <input type="text" class="form-input" id="input-material-name" placeholder="เช่น ลูกปัดแก้ว">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">ราคาที่ซื้อทั้งหมด (บาท)</label>
+        <input type="number" inputmode="decimal" class="form-input" id="input-material-total-cost"
+          placeholder="0" oninput="updateMaterialUnitCostPreview()">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">จำนวนที่ได้</label>
+        <input type="number" inputmode="decimal" class="form-input" id="input-material-qty"
+          placeholder="0" oninput="updateMaterialUnitCostPreview()">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">หน่วยนับ</label>
+        <input type="text" class="form-input" id="input-material-unit"
+          placeholder="เช่น ชิ้น, กรัม, ซอง, ขวด" oninput="updateMaterialUnitCostPreview()">
+      </div>
+
+      <div class="unit-cost-preview" id="material-unit-cost-preview">ราคาต่อหน่วย: —</div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">จำนวนที่ได้</label>
-      <input type="number" inputmode="decimal" class="form-input" id="input-material-qty"
-        placeholder="0" oninput="updateMaterialUnitCostPreview()">
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">หน่วยนับ</label>
-      <input type="text" class="form-input" id="input-material-unit"
-        placeholder="เช่น ชิ้น, กรัม, ซอง, ขวด" oninput="updateMaterialUnitCostPreview()">
-    </div>
-
-    <div class="unit-cost-preview" id="material-unit-cost-preview">ราคาต่อหน่วย: —</div>
-
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal('modal-material')">ยกเลิก</button>
-      <button class="btn btn-primary" onclick="submitMaterial()">บันทึก</button>
+    <div class="modal-fullpage-footer">
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-material')">ยกเลิก</button>
+        <button class="btn btn-primary" onclick="submitMaterial()">บันทึก</button>
+      </div>
     </div>
   </div>
 </div>
