@@ -2250,7 +2250,10 @@ function switchPage(pageId) {
 /* Modal helpers — เผื่อไว้สำหรับบล็อคถัดไป (ยังไม่มี modal ใน DOM ตอนนี้) */
 function openModal(modalId) {
   const el = document.getElementById(modalId);
-  if (el) el.classList.add('open');
+  if (!el) return;
+  el.classList.add('open');
+  // บังคับ reflow กัน iOS/webview ไม่ยอม repaint fixed element ทันทีที่ toggle class
+  void el.offsetHeight;
 }
 function closeModal(modalId) {
   const el = document.getElementById(modalId);
