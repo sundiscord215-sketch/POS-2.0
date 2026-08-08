@@ -1561,9 +1561,8 @@
        PAGE: PAID (ชำระสำเร็จ)
        ══════════════════════════════════════════════ -->
 <div id="page-paid" class="page paid-page">
-    <div class="sub-page-header" style="position:absolute; top:0; left:0; right:0; border-bottom:none; background:transparent;">
-      <div style="flex:1;"></div>
-      <button class="pay-back-btn" onclick="goToReceiptPage(_lastSaleId, true)" title="ดูใบเสร็จ">🧾</button>
+    <div class="sub-page-header" style="position:absolute; top:0; left:0; right:0; border-bottom:none; background:transparent; justify-content:flex-end;">
+      <button onclick="goToReceiptPage(_lastSaleId, true)" style="background:none; border:none; color:var(--text-dim); font-size:14px; font-weight:700; text-decoration:underline; padding:8px;">Receipt</button>
     </div>
     <div class="paid-icon">✓</div>
     <div class="paid-title">ชำระเงินสำเร็จ</div>
