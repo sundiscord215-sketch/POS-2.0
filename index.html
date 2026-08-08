@@ -4928,7 +4928,7 @@ async function renderEmployeeReceiptHistory() {
     return `
       <div class="history-item">
         <div class="hi-main">
-          <div class="hi-time">${timeStr} · 💵</div>
+          <div class="hi-time">${timeStr} · ${sale.paymentMethod === 'cash' ? 'Cash' : 'QR'}</div>
           <div class="hi-summary">${itemCount} ชิ้น</div>
         </div>
         ${syncBadge}
@@ -5935,7 +5935,7 @@ async function renderSalesHistory() {
     return `
       <div class="history-item" onclick="goToReceiptPage('${sale.id}', false)">
         <div class="hi-main">
-          <div class="hi-time">${timeStr} · ${sale.paymentMethod === 'cash' ? '💵' : '📱'} · ${escapeHtml(sale.employeeName || 'เจ้าของร้าน')}</div>
+         <div class="hi-time">${timeStr} · ${sale.paymentMethod === 'cash' ? 'Cash' : 'QR'} · ${escapeHtml(sale.employeeName || 'เจ้าของร้าน')}</div>
           <div class="hi-summary">${itemCount} ชิ้น</div>
         </div>
         ${badge}
