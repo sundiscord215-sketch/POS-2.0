@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="POS บูธ">
 <link rel="manifest" href="./manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>POS บูธ</title>
 <style>
   /* ══════════════════════════════════════════════
@@ -29,7 +32,7 @@
     --paid-green: #2ecc71;
     --radius:     10px;
     --radius-sm:  6px;
-    --font:       'Sarabun', sans-serif;
+   --font:       'IBM Plex Sans Thai', sans-serif;
     --nav-h:      56px;
     --tab-h:      52px;
   }
@@ -1364,7 +1367,7 @@
         <div class="tn-code" id="tn-code">—</div>
         <div id="conn-status" class="offline">
           <span class="dot"></span>
-          <span class="label">ออฟไลน์</span>
+          <span class="label">Offline</span>
         </div>
       </div>
     </div>
@@ -1478,18 +1481,18 @@
 
       <!-- แผงตะกร้าขวา — จอกว้างเท่านั้น (โชว์ตลอด) -->
       <div class="pos-cart-panel" id="pos-cart-panel">
-        <div class="pcp-title">ตะกร้าสินค้า</div>
+        <div class="modal-title">ตะกร้าสินค้า</div>
         <div class="pcp-lines" id="pcp-lines">
           <!-- render โดย renderPOSCartPanel() -->
         </div>
         <div class="pcp-footer">
           <div class="pcp-total-row">
-            <span>ยอดรวม</span>
-            <span class="pcp-amount" id="pcp-total-amount">0 บ.</span>
+            <span>Total</span>
+            <span class="pcp-amount" id="pcp-total-amount">0 ฿</span>
           </div>
           <div class="pcp-pay-row">
-            <button class="btn btn-secondary" id="pcp-cash-btn" onclick="goToCashPage()">💵 เงินสด</button>
-            <button class="btn btn-primary" id="pcp-qr-btn" onclick="goToQRPage()">📱 QR</button>
+            <button class="btn btn-secondary" id="pcp-cash-btn" onclick="goToCashPage()"> Cash</button>
+            <button class="btn btn-primary" id="pcp-qr-btn" onclick="goToQRPage()"> QR</button>
           </div>
         </div>
       </div>
@@ -1498,8 +1501,8 @@
     <!-- แถบตะกร้าลอย — จอแคบ/มือถือเท่านั้น -->
     <button class="cart-bar" id="cart-bar" onclick="openCartSheet()">
       <span class="cart-bar-count" id="cart-bar-count">0</span>
-      <span class="cart-bar-label">ตะกร้า</span>
-      <span class="cart-bar-total" id="cart-bar-total">0 บ.</span>
+      <span class="cart-bar-label">Cart</span>
+      <span class="cart-bar-total" id="cart-bar-total">0 ฿</span>
     </button>
   </div>
 <!-- ══════════════════════════════════════════════
@@ -1517,7 +1520,7 @@
       <div class="pay-right">
         <div class="pay-total-box">
           <div class="ptb-label">ยอดที่ต้องชำระ</div>
-          <div class="ptb-amount" id="cash-total-amount">0 บ.</div>
+          <div class="ptb-amount" id="cash-total-amount">0 ฿</div>
         </div>
         <div class="cash-input-wrap">
           <input type="number" inputmode="decimal" id="cash-received-input" placeholder="รับเงินมา (บาท)" oninput="renderCashChange()">
@@ -1525,7 +1528,7 @@
         <div class="cash-quick-row" id="cash-quick-row"><!-- render โดย renderCashQuickButtons() --></div>
         <div class="cash-change-box" id="cash-change-box">
           <div class="ccb-label">เงินทอน</div>
-          <div class="ccb-amount" id="cash-change-amount">0 บ.</div>
+          <div class="ccb-amount" id="cash-change-amount">0 ฿</div>
         </div>
         <div class="pay-confirm-row">
           <button class="btn btn-secondary" onclick="switchPage('page-pos')">ยกเลิก</button>
@@ -1560,7 +1563,7 @@
   <div id="page-paid" class="page paid-page">
     <div class="paid-icon">✓</div>
     <div class="paid-title">ชำระเงินสำเร็จ</div>
-    <div class="paid-amount" id="paid-amount">0 บ.</div>
+    <div class="paid-amount" id="paid-amount">0 ฿</div>
     <div class="paid-sub" id="paid-sub"></div>
     <div class="paid-countdown" id="paid-countdown">3</div>
     <div class="paid-actions">
@@ -1635,7 +1638,7 @@
     <button class="cart-bar" id="employee-cart-bar" onclick="openEmployeeCartSheet()">
       <span class="cart-bar-count" id="employee-cart-bar-count">0</span>
       <span class="cart-bar-label">ตะกร้า</span>
-      <span class="cart-bar-total" id="employee-cart-bar-total">0 บ.</span>
+      <span class="cart-bar-total" id="employee-cart-bar-total">0 ฿</span>
     </button>
   </div>
 
@@ -1659,7 +1662,7 @@
       <div id="employee-cart-lines-container"></div>
       <div class="cart-total-row">
         <span>ยอดรวม</span>
-        <span class="ct-amount" id="employee-cart-total-amount">0 บ.</span>
+        <span class="ct-amount" id="employee-cart-total-amount">0 ฿</span>
       </div>
       <div class="modal-actions">
         <button class="btn btn-secondary" onclick="closeModal('modal-employee-cart')">ปิด</button>
@@ -1677,7 +1680,7 @@
       <div class="modal-title">รับเงิน</div>
       <div class="form-group">
         <label class="form-label">ยอดที่ต้องชำระ</label>
-        <div style="font-size:28px; font-weight:800; color:var(--cta); text-align:center; padding:10px 0;" id="employee-pay-total">0 บ.</div>
+        <div style="font-size:28px; font-weight:800; color:var(--cta); text-align:center; padding:10px 0;" id="employee-pay-total">0 ฿</div>
       </div>
       <div class="form-group">
         <label class="form-label">รับเงินมา (บาท)</label>
@@ -1685,7 +1688,7 @@
       </div>
       <div class="cash-change-box" id="employee-cash-change-box">
         <div class="ccb-label">เงินทอน</div>
-        <div class="ccb-amount" id="employee-cash-change-amount">0 บ.</div>
+        <div class="ccb-amount" id="employee-cash-change-amount">0 ฿</div>
       </div>
       <div class="modal-actions">
         <button class="btn btn-secondary" onclick="closeModal('modal-employee-payment-method')">ยกเลิก</button>
@@ -2015,7 +2018,7 @@
 
     <div class="cart-total-row">
       <span>ยอดรวม</span>
-      <span class="ct-amount" id="cart-total-amount">0 บ.</span>
+      <span class="ct-amount" id="cart-total-amount">0 ฿</span>
     </div>
 
     <div class="modal-actions">
@@ -2036,7 +2039,7 @@
     <button class="pay-method-btn" onclick="closeModal('modal-payment-method'); goToCashPage();">
       <div class="pm-icon">💵</div>
       <div>
-        <div class="pm-label">เงินสด</div>
+        <div class="pm-label">Cash</div>
         <div class="pm-sub">คิดเงินทอนให้อัตโนมัติ</div>
       </div>
     </button>
@@ -2079,7 +2082,7 @@
     <div id="refund-lines-container"><!-- render โดย openRefundModal() --></div>
     <div class="cart-total-row">
       <span>ยอดคืน</span>
-      <span class="ct-amount" id="refund-total-amount">0 บ.</span>
+      <span class="ct-amount" id="refund-total-amount">0 ฿</span>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('modal-refund')">ยกเลิก</button>
@@ -2115,7 +2118,7 @@ function setConnStatus(online) {
   const el = document.getElementById('conn-status');
   el.classList.toggle('online', online);
   el.classList.toggle('offline', !online);
-  el.querySelector('.label').textContent = online ? 'ออนไลน์' : 'ออฟไลน์';
+  el.querySelector('.label').textContent = online ? 'Online' : 'Offline';
 }
 
 /* สลับหน้า (แทนที่ switchTab เดิม — ตอนนี้ไม่มี tab bar แล้ว
@@ -3428,8 +3431,8 @@ return `
             ${category ? `<div class="item-category-tag">${category.icon} ${escapeHtml(category.name)}</div>` : ''}
             ${owner ? `<div class="item-owner-tag">${owner.icon} ${escapeHtml(owner.name)}</div>` : ''}
             <div class="item-price-row">
-              <span class="price">ขาย ${fmt(p.price)} บ.</span>
-              <span class="profit ${profitClass}">กำไร ${fmt(p.profit)} บ.</span>
+              <span class="price">ขาย ${fmt(p.price)} ฿</span>
+              <span class="profit ${profitClass}">กำไร ${fmt(p.profit)} ฿</span>
             </div>
             <span class="stock-badge">${stockText}</span>
           </div>
@@ -3633,7 +3636,7 @@ function renderProductRecipeLines() {
         </select>
         <input type="number" inputmode="decimal" placeholder="จำนวน" value="${line.qty || ''}"
           oninput="updateRecipeLineQty('${line._lineUid}', this.value)">
-        <div class="recipe-subtotal">${fmt(getRecipeLineSubtotal(line))} บ.</div>
+        <div class="recipe-subtotal">${fmt(getRecipeLineSubtotal(line))} ฿</div>
         <button type="button" class="recipe-remove" onclick="removeRecipeLine('${line._lineUid}')">✕</button>
       </div>
     `).join('');
@@ -3664,7 +3667,7 @@ function updateRecipeLineQty(lineUid, qtyValue) {
 
   // อัปเดตแค่ subtotal ของบรรทัดนี้ ไม่ re-render ทั้งลิสต์ (กันโฟกัสหลุดตอนพิมพ์)
   const subtotalEl = document.querySelector(`.recipe-line[data-line-uid="${lineUid}"] .recipe-subtotal`);
-  if (subtotalEl) subtotalEl.textContent = fmt(getRecipeLineSubtotal(line)) + ' บ.';
+  if (subtotalEl) subtotalEl.textContent = fmt(getRecipeLineSubtotal(line)) + ' ฿';
 
   updateProductCostAndProfitPreview();
 }
@@ -3883,8 +3886,8 @@ container.innerHTML = filteredProducts.map(p => {
         <div class="pos-card-icon">${productThumbHtml(p)}</div>
         ${inCart > 0 ? `<div class="pos-card-qty-badge">${inCart}</div>` : ''}
         <div class="pos-card-name">${escapeHtml(p.name)}</div>
-        <div class="pos-card-price">${fmt(p.price)} บ.</div>
-        ${p.stockEnabled ? `<div class="pos-card-stock">เหลือ ${fmt(p.stock)}</div>` : ''}
+        <div class="pos-card-price">${fmt(p.price)} ฿</div>
+        ${p.stockEnabled ? `<div class="pos-card-stock">${fmt(p.stock)} left</div>` : ''}
       </div>
     `;
   }).join('');
@@ -3921,7 +3924,7 @@ function renderCartBar() {
   }
   bar.classList.add('show');
   document.getElementById('cart-bar-count').textContent = totalQty;
-  document.getElementById('cart-bar-total').textContent = fmt(getCartTotal()) + ' บ.';
+  document.getElementById('cart-bar-total').textContent = fmt(getCartTotal()) + ' ฿';
 }
 
 function openCartSheet() {
@@ -3934,7 +3937,7 @@ function renderCartSheet() {
   const entries = Object.entries(_cart).filter(([, qty]) => qty > 0);
 
   if (entries.length === 0) {
-    container.innerHTML = `<div class="sm-empty" style="margin:12px 0;">ตะกร้าว่างเปล่า</div>`;
+    container.innerHTML = `<div class="sm-empty" style="margin:12px 0;">Cart is empty</div>`;
   } else {
     container.innerHTML = entries.map(([pid, qty]) => {
       const p = _posProducts.find(x => x.id === pid);
@@ -3945,21 +3948,21 @@ function renderCartSheet() {
           <div class="cl-icon">${productThumbHtml(p)}</div>
           <div class="cl-main">
             <div class="cl-name">${escapeHtml(p.name)}</div>
-            <div class="cl-unit-price">${fmt(p.price)} บ. / ชิ้น</div>
+            <div class="cl-unit-price">${fmt(p.price)} ฿ / ชิ้น</div>
           </div>
           <div class="cl-stepper">
             <button onclick="decrementCartLine('${pid}')">−</button>
             <div class="cl-qty">${qty}</div>
             <button onclick="addToCart('${pid}')">+</button>
           </div>
-          <div class="cl-subtotal">${fmt(subtotal)} บ.</div>
+          <div class="cl-subtotal">${fmt(subtotal)} ฿</div>
           <button class="cl-remove" onclick="removeCartLine('${pid}')">🗑</button>
         </div>
       `;
     }).join('');
   }
 
-  document.getElementById('cart-total-amount').textContent = fmt(getCartTotal()) + ' บ.';
+  document.getElementById('cart-total-amount').textContent = fmt(getCartTotal()) + ' ฿';
 
   const chargeBtn = document.getElementById('cart-charge-btn');
   chargeBtn.disabled = entries.length === 0;
@@ -4018,10 +4021,10 @@ function renderPOSCartPanel() {
         <div class="pcp-line">
           <div class="pcp-line-top">
             <div class="pcp-line-name">${escapeHtml(p.name)}</div>
-            <div class="pcp-line-subtotal">${fmt(subtotal)} บ.</div>
+            <div class="pcp-line-subtotal">${fmt(subtotal)} ฿</div>
           </div>
           <div class="pcp-line-bottom">
-            <div class="pcp-line-unit">${qty} × ${fmt(p.price)} บ.</div>
+            <div class="pcp-line-unit">${qty} × ${fmt(p.price)} ฿</div>
             <div style="display:flex; align-items:center; gap:8px;">
               <div class="pcp-line-stepper">
                 <button onclick="decrementCartLine('${pid}')">−</button>
@@ -4036,7 +4039,7 @@ function renderPOSCartPanel() {
     }).join('');
   }
 
-totalEl.textContent = fmt(getCartTotal()) + ' บ.';
+totalEl.textContent = fmt(getCartTotal()) + ' ฿';
   const disabled = entries.length === 0;
   if (cashBtn) cashBtn.disabled = disabled;
   if (qrBtn) qrBtn.disabled = disabled;
@@ -4133,7 +4136,7 @@ async function handleIncomingSale(saleFromEmployee, conn) {
         products: _posProducts.map(p => ({ id: p.id, stockEnabled: p.stockEnabled, stock: p.stock }))
       });
 
-      showToast(`รับใบเสร็จจากพนักงาน · ${fmt(saleFromEmployee.total)} บ.`);
+      showToast(`รับใบเสร็จจากพนักงาน · ${fmt(saleFromEmployee.total)} ฿`);
     }
 
  // ack กลับไม่ว่าจะซ้ำหรือไม่ซ้ำ — ฝั่งพนักงานจะได้ลบออกจากคิวได้เสมอ
@@ -4446,7 +4449,7 @@ function renderEmployeePOSGrid() {
         <div class="pos-card-icon">${productThumbHtml(p)}</div>
         ${inCart > 0 ? `<div class="pos-card-qty-badge">${inCart}</div>` : ''}
         <div class="pos-card-name">${escapeHtml(p.name)}</div>
-        <div class="pos-card-price">${fmt(p.price)} บ.</div>
+        <div class="pos-card-price">${fmt(p.price)} ฿</div>
         ${p.stockEnabled ? `<div class="pos-card-stock">เหลือ ${fmt(p.stock)}</div>` : ''}
       </div>
     `;
@@ -4502,7 +4505,7 @@ function renderEmployeeCartBar() {
   if (totalQty === 0) { bar.classList.remove('show'); return; }
   bar.classList.add('show');
   document.getElementById('employee-cart-bar-count').textContent = totalQty;
-  document.getElementById('employee-cart-bar-total').textContent = fmt(getEmployeeCartTotal()) + ' บ.';
+  document.getElementById('employee-cart-bar-total').textContent = fmt(getEmployeeCartTotal()) + ' ฿';
 }
 
 function openEmployeeCartSheet() {
@@ -4526,21 +4529,21 @@ function renderEmployeeCartSheet() {
           <div class="cl-icon">${productThumbHtml(p)}</div>
           <div class="cl-main">
             <div class="cl-name">${escapeHtml(p.name)}</div>
-            <div class="cl-unit-price">${fmt(p.price)} บ. / ชิ้น</div>
+            <div class="cl-unit-price">${fmt(p.price)} ฿ / ชิ้น</div>
           </div>
           <div class="cl-stepper">
             <button onclick="decrementEmployeeCartLine('${pid}')">−</button>
             <div class="cl-qty">${qty}</div>
             <button onclick="addToEmployeeCart('${pid}')">+</button>
           </div>
-          <div class="cl-subtotal">${fmt(subtotal)} บ.</div>
+          <div class="cl-subtotal">${fmt(subtotal)} ฿</div>
           <button class="cl-remove" onclick="removeEmployeeCartLine('${pid}')">🗑</button>
         </div>
       `;
     }).join('');
   }
 
-  document.getElementById('employee-cart-total-amount').textContent = fmt(getEmployeeCartTotal()) + ' บ.';
+  document.getElementById('employee-cart-total-amount').textContent = fmt(getEmployeeCartTotal()) + ' ฿';
   document.getElementById('employee-cart-charge-btn').disabled = entries.length === 0;
 }
 
@@ -4555,13 +4558,13 @@ function renderEmployeeCashChange() {
   const amountEl = document.getElementById('employee-cash-change-amount');
 
   if (receivedRaw === '') {
-    amountEl.textContent = '0 บ.';
+    amountEl.textContent = '0 ฿';
     box.classList.remove('insufficient');
   } else if (change < 0) {
-    amountEl.textContent = 'ขาดอีก ' + fmt(Math.abs(change)) + ' บ.';
+    amountEl.textContent = 'ขาดอีก ' + fmt(Math.abs(change)) + ' ฿';
     box.classList.add('insufficient');
   } else {
-    amountEl.textContent = fmt(change) + ' บ.';
+    amountEl.textContent = fmt(change) + ' ฿';
     box.classList.remove('insufficient');
   }
   document.getElementById('employee-cash-confirm-btn').disabled = receivedRaw === '' || change < 0;
@@ -4571,7 +4574,7 @@ function renderEmployeeCashChange() {
 document.addEventListener('DOMContentLoaded', () => {}); // กัน error เผื่อ browser เก่า (ไม่ทำอะไร)
 
 function openEmployeePaymentModal() {
-  document.getElementById('employee-pay-total').textContent = fmt(getEmployeeCartTotal()) + ' บ.';
+  document.getElementById('employee-pay-total').textContent = fmt(getEmployeeCartTotal()) + ' ฿';
   document.getElementById('input-employee-cash-received').value = '';
   renderEmployeeCashChange();
 }
@@ -4594,7 +4597,7 @@ async function confirmEmployeeCashPayment() {
   closeModal('modal-employee-payment-method');
   renderEmployeePOSGrid();
   renderEmployeeCartBar();
-  showToast(`ขายสำเร็จ · ${fmt(total)} บ.`);
+  showToast(`ขายสำเร็จ · ${fmt(total)} ฿`);
 }
 
 /* ── ประวัติใบเสร็จ ฝั่งพนักงาน (badge 🟡รอส่ง / ✅ส่งแล้ว) ── */
@@ -4639,7 +4642,7 @@ async function renderEmployeeReceiptHistory() {
           <div class="hi-summary">${itemCount} ชิ้น</div>
         </div>
         ${syncBadge}
-        <div class="hi-amount">${fmt(sale.total)} บ.</div>
+        <div class="hi-amount">${fmt(sale.total)} ฿</div>
       </div>`;
   }).join('');
 }
@@ -5013,7 +5016,7 @@ function goToCashPage() {
   closeModal('modal-payment-method');
   closeModal('modal-cart');
   renderPayBillLines('cash-bill-lines');
-  document.getElementById('cash-total-amount').textContent = fmt(getCartTotal()) + ' บ.';
+  document.getElementById('cash-total-amount').textContent = fmt(getCartTotal()) + ' ฿';
   document.getElementById('cash-received-input').value = '';
   renderCashQuickButtons();
   renderCashChange();
@@ -5032,7 +5035,7 @@ function renderPayBillLines(containerId) {
       <div class="pay-bill-line">
         <span class="pbl-qty">${qty}</span>
         <span class="pbl-name">${escapeHtml(p.name)}</span>
-        <span class="pbl-amount">${fmt(p.price * qty)} บ.</span>
+        <span class="pbl-amount">${fmt(p.price * qty)} ฿</span>
       </div>`;
   }).join('');
 }
@@ -5065,13 +5068,13 @@ function renderCashChange() {
   const amountEl = document.getElementById('cash-change-amount');
 
   if (receivedRaw === '') {
-    amountEl.textContent = '0 บ.';
+    amountEl.textContent = '0 ฿';
     box.classList.remove('insufficient');
   } else if (change < 0) {
-    amountEl.textContent = 'ขาดอีก ' + fmt(Math.abs(change)) + ' บ.';
+    amountEl.textContent = 'ขาดอีก ' + fmt(Math.abs(change)) + ' ฿';
     box.classList.add('insufficient');
   } else {
-    amountEl.textContent = fmt(change) + ' บ.';
+    amountEl.textContent = fmt(change) + ' ฿';
     box.classList.remove('insufficient');
   }
   document.getElementById('cash-confirm-btn').disabled = receivedRaw === '' || change < 0;
@@ -5284,9 +5287,9 @@ return {
   await loadPOSProducts();
   renderPOSCartPanel();
 
-document.getElementById('paid-amount').textContent = fmt(total) + ' บ.';
+document.getElementById('paid-amount').textContent = fmt(total) + ' ฿';
   document.getElementById('paid-sub').textContent = method === 'cash'
-    ? `เงินสด · รับ ${fmt(extra.cashReceived)} บ. ทอน ${fmt(extra.changeGiven)} บ.`
+    ? `เงินสด · รับ ${fmt(extra.cashReceived)} ฿ ทอน ${fmt(extra.changeGiven)} ฿`
     : 'พร้อมเพย์ (QR)';
   switchPage('page-paid');
   startPaidCountdown();
@@ -5380,7 +5383,7 @@ function renderReceiptPage(sale) {
          <div class="rl-name">${escapeHtml(it.name)} × ${it.qty}</div>
           ${it.refundedQty > 0 ? `<div class="rl-sub">คืนแล้ว ${it.refundedQty} ชิ้น</div>` : ''}
         </div>
-        <div class="rl-amount">${fmt(it.subtotal)} บ.</div>
+        <div class="rl-amount">${fmt(it.subtotal)} ฿</div>
       </div>`;
   }).join('');
 
@@ -5399,9 +5402,9 @@ function renderReceiptPage(sale) {
     <div>${linesHtml}</div>
     <div class="receipt-total-row">
       <span>ยอดสุทธิ</span>
-      <span class="rt-amount">${fmt(sale.total - (sale.refundedTotal || 0))} บ.</span>
+      <span class="rt-amount">${fmt(sale.total - (sale.refundedTotal || 0))} ฿</span>
     </div>
-    ${sale.refundedTotal > 0 ? `<div style="text-align:right; font-size:12px; color:var(--text-dim); margin-top:-6px;">คืนเงินไปแล้ว ${fmt(sale.refundedTotal)} บ.</div>` : ''}
+    ${sale.refundedTotal > 0 ? `<div style="text-align:right; font-size:12px; color:var(--text-dim); margin-top:-6px;">คืนเงินไปแล้ว ${fmt(sale.refundedTotal)} ฿</div>` : ''}
     ${canRefund ? `<button class="btn btn-secondary" style="width:100%; margin-top:20px;" onclick="openRefundModal()">↩️ คืนเงิน</button>` : ''}
   `;
 }
@@ -5437,7 +5440,7 @@ function renderRefundLines() {
 
   let refundTotal = 0;
   sale.items.forEach(it => { refundTotal += (_refundQtyState[it.productId] || 0) * it.price; });
-  document.getElementById('refund-total-amount').textContent = fmt(refundTotal) + ' บ.';
+  document.getElementById('refund-total-amount').textContent = fmt(refundTotal) + ' ฿';
   document.getElementById('refund-confirm-btn').disabled = refundTotal <= 0;
 }
 
@@ -5536,7 +5539,7 @@ async function renderSalesHistory() {
           <div class="hi-summary">${itemCount} ชิ้น</div>
         </div>
         ${badge}
-        <div class="hi-amount">${fmt(netTotal)} บ.</div>
+        <div class="hi-amount">${fmt(netTotal)} ฿</div>
       </div>`;
   }).join('');
 }
@@ -5591,7 +5594,7 @@ async function renderSummaryPage() {
   const ownerRowsHtml = Object.entries(ownerTotals).map(([key, amount]) => {
     const owner = owners.find(o => o.id === key);
     const name = owner ? `${owner.icon || '🧑‍💼'} ${owner.name}` : 'ไม่ระบุเจ้าของ';
-    return `<div class="summary-owner-row"><span class="so-name">${escapeHtml(name)}</span><span class="so-amount">${fmt(amount)} บ.</span></div>`;
+    return `<div class="summary-owner-row"><span class="so-name">${escapeHtml(name)}</span><span class="so-amount">${fmt(amount)} ฿</span></div>`;
   }).join('') || '<div class="sm-empty" style="padding:16px 0;">ยังไม่มียอดขายวันนี้</div>';
 
   container.innerHTML = `
