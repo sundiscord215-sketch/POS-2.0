@@ -1675,14 +1675,39 @@
       </div>
       <div class="modal-actions">
         <button class="btn btn-secondary" onclick="closeModal('modal-employee-cart')">ปิด</button>
-       <button class="btn btn-primary" id="employee-cart-charge-btn" onclick="closeModal('modal-employee-cart'); openEmployeePaymentModal(); openModal('modal-employee-payment-method');">เก็บเงิน</button>
+         <button class="btn btn-primary" id="employee-cart-charge-btn" onclick="closeModal('modal-employee-cart'); openModal('modal-employee-payment-choice');">เก็บเงิน</button>
       </div>
       <div class="cart-clear-link" onclick="clearEmployeeCartConfirm()">ล้างตะกร้าทั้งหมด</div>
     </div>
   </div>
+<!-- ══════════════════════════════════════════════
+       MODAL: เลือกวิธีจ่าย ฝั่งพนักงาน (เงินสด / QR ตาม PromptPay ที่ iPad ตั้งไว้)
+       ══════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-employee-payment-choice">
+    <div class="modal-panel">
+      <div class="modal-title">เลือกวิธีจ่าย</div>
+      <button class="pay-method-btn" onclick="closeModal('modal-employee-payment-choice'); openEmployeePaymentModal(); openModal('modal-employee-payment-method');">
+        <div class="pm-icon">💵</div>
+        <div>
+          <div class="pm-label">เงินสด</div>
+          <div class="pm-sub">คิดเงินทอนให้อัตโนมัติ</div>
+        </div>
+      </button>
+      <button class="pay-method-btn" onclick="openEmployeeQRPayment()">
+        <div class="pm-icon">📱</div>
+        <div>
+          <div class="pm-label">พร้อมเพย์ (QR)</div>
+          <div class="pm-sub">โชว์ QR ให้ลูกค้าสแกน</div>
+        </div>
+      </button>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-employee-payment-choice')">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ══════════════════════════════════════════════
-       MODAL: เลือกวิธีจ่าย ฝั่งพนักงาน (เงินสดเท่านั้น — ไม่มี PromptPay ของ iPad)
+       MODAL: รับเงินสด ฝั่งพนักงาน
        ══════════════════════════════════════════════ -->
   <div class="modal-overlay" id="modal-employee-payment-method">
     <div class="modal-panel">
@@ -1706,6 +1731,19 @@
     </div>
   </div>
 
+  <!-- ══════════════════════════════════════════════
+       MODAL: จ่าย QR ฝั่งพนักงาน
+       ══════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-employee-qr">
+    <div class="modal-panel">
+      <div class="modal-title">พร้อมเพย์ (QR)</div>
+      <div id="employee-qr-body"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-employee-qr')">ยกเลิก</button>
+        <button class="btn btn-primary" onclick="confirmEmployeeQRPayment()">ยืนยันรับเงินแล้ว</button>
+      </div>
+    </div>
+  </div>
   <div id="toast-container"></div>
 
 </div>
@@ -4126,7 +4164,7 @@ function onEmployeeDisconnected(conn) {
 }
 
 /** ส่งสินค้าทั้งหมด (ไม่รวมต้นทุน/สูตรวัตถุดิบ — พนักงานเห็นแค่ชื่อ+ราคาขาย+สต็อก) ให้มือถือเครื่องเดียว */
-function sendCatalogToEmployee(conn) {
+async function sendCatalogToEmployee(conn) {
   const products = _posProducts.map(p => ({
     id: p.id,
     name: p.name,
@@ -4137,7 +4175,8 @@ function sendCatalogToEmployee(conn) {
     categoryId: p.categoryId || null,
   }));
   const categories = _posCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon }));
-  sendPeerMessage(conn, 'catalog', { products, categories, roomCode: _peerRoomCode });
+  const pp = await loadPromptPaySettings();
+  sendPeerMessage(conn, 'catalog', { products, categories, roomCode: _peerRoomCode, promptpayId: pp ? pp.promptpayId : null });
 }
 
 /** พนักงานส่งใบเสร็จเข้ามา (ตอนออนไลน์ตอนขาย หรือดันคิวตอน reconnect)
@@ -4268,6 +4307,8 @@ function onHostDisconnected() {
 }
 
 /** รับ catalog เต็มจาก host — เขียนทับ local cache ทั้งหมด (ไม่มีต้นทุน/กำไรติดมาอยู่แล้วเพราะ host กรองออกแล้ว) */
+let _employeePromptPayId = null;
+
 async function handleCatalogFromHost(payload) {
   try {
     await dbClear('products');
@@ -4278,6 +4319,7 @@ async function handleCatalogFromHost(payload) {
     for (const c of (payload.categories || [])) {
       await dbPut('categories', c);
     }
+    _employeePromptPayId = payload.promptpayId || null;
     // ถ้ากำลังอยู่หน้าขายของพนักงานอยู่ (Block D จะมีฟังก์ชันนี้) ให้รีเฟรชกริดสินค้า
     if (typeof renderEmployeePOSGrid === 'function') {
       _employeeProducts = await dbGetAll('products');
@@ -4567,7 +4609,6 @@ function renderEmployeeCartSheet() {
       const subtotal = p.price * qty;
       return `
         <div class="cart-line">
-          <div class="cl-icon">${productThumbHtml(p)}</div>
           <div class="cl-main">
             <div class="cl-name">${escapeHtml(p.name)}</div>
             <div class="cl-unit-price">${fmt(p.price)} ฿ / ชิ้น</div>
@@ -4636,6 +4677,58 @@ async function confirmEmployeeCashPayment() {
   _employeeCart = {};
   _employeeProducts = await dbGetAll('products'); // ดึง stock ที่ตัดไปแล้วกลับมาโชว์
   closeModal('modal-employee-payment-method');
+  renderEmployeePOSGrid();
+  renderEmployeeCartBar();
+  showToast(`ขายสำเร็จ · ${fmt(total)} ฿`);
+}
+
+/** เปิดหน้า QR ฝั่งพนักงาน — ใช้เลข PromptPay ที่ซิงค์มาจาก iPad */
+function openEmployeeQRPayment() {
+  closeModal('modal-employee-payment-choice');
+  const total = getEmployeeCartTotal();
+  const body = document.getElementById('employee-qr-body');
+
+  if (!_employeePromptPayId) {
+    body.innerHTML = `<div class="qr-not-setup">ร้านยังไม่ได้ตั้งค่า PromptPay<br>กรุณาแจ้งเจ้าของร้านให้ตั้งค่าที่ iPad ก่อน</div>`;
+    openModal('modal-employee-qr');
+    return;
+  }
+
+  try {
+    const payload = buildPromptPayPayload(_employeePromptPayId, total);
+    const matrix = encodeQR(payload);
+    const svg = matrixToSVG(matrix);
+    body.innerHTML = `
+      <div class="qr-page-label">PROMPTPAY QR</div>
+      <div class="qr-box">${svg}</div>
+      <div class="qr-amount-due">
+        <div class="qad-label">AMOUNT DUE</div>
+        <div class="qad-amount">฿${fmt(total)}</div>
+      </div>
+    `;
+  } catch (e) {
+    console.error(e);
+    body.innerHTML = `<div class="qr-not-setup">สร้าง QR ไม่สำเร็จ: ${escapeHtml(e.message)}</div>`;
+  }
+  openModal('modal-employee-qr');
+}
+
+/** ยืนยันว่าลูกค้าจ่าย QR แล้ว — บันทึกการขายแบบเดียวกับเงินสด แต่ paymentMethod = 'qr' */
+async function confirmEmployeeQRPayment() {
+  const total = getEmployeeCartTotal();
+  if (total <= 0) return;
+
+  const cartItems = Object.entries(_employeeCart)
+    .filter(([, qty]) => qty > 0)
+    .map(([pid, qty]) => ({ product: _employeeProducts.find(x => x.id === pid), qty }))
+    .filter(x => x.product);
+
+  const sale = await employeeFinalizeSale(cartItems, 'qr', {});
+  if (!sale) return;
+
+  _employeeCart = {};
+  _employeeProducts = await dbGetAll('products');
+  closeModal('modal-employee-qr');
   renderEmployeePOSGrid();
   renderEmployeeCartBar();
   showToast(`ขายสำเร็จ · ${fmt(total)} ฿`);
