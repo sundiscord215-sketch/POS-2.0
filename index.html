@@ -359,13 +359,22 @@
   }
 
   /* ── item-card extras: owner tag / price row / stock badge (หน้าสินค้า) ── */
-  .item-card .item-owner-tag {
+ .item-card .item-owner-tag {
     display: inline-flex;
     align-items: center;
     gap: 4px;
     font-size: 11.5px;
     color: var(--text-dim);
     margin-top: 3px;
+  }
+  .item-card .item-category-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--accent2);
+    font-weight: 700;
+    margin-top: 2px;
   }
   .item-card .item-price-row {
     display: flex;
@@ -1284,6 +1293,20 @@
     width: 26px; height: 26px; border-radius: 50%; background: var(--surface2);
     font-weight: 700; display: flex; align-items: center; justify-content: center;
   }
+/* ── ฟอร์มสินค้า: 2 คอลัมน์บนจอกว้าง ── */
+  .product-form-grid { display: block; }
+  @media (min-width: 900px) {
+    #modal-product .modal-fullpage-body,
+    #modal-product .modal-fullpage-footer .modal-actions {
+      max-width: 920px;
+    }
+    .product-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 28px;
+      align-items: start;
+    }
+  }
 </style>
 </head>
 <body>
@@ -1366,6 +1389,20 @@
       <!-- render โดย renderOwnersList() -->
     </div>
     <button class="sm-fab" onclick="openCreateOwnerModal()">+</button>
+  </div>
+
+<!-- ══════════════════════════════════════════════
+       PAGE: หมวดหมู่สินค้า (เข้าจากเมนูตั้งค่า > จัดการร้าน)
+       ══════════════════════════════════════════════ -->
+  <div id="page-categories" class="page">
+    <div class="sub-header">
+      <button class="sub-back" onclick="closeSubPage()">←</button>
+      <div class="sub-title">หมวดหมู่สินค้า</div>
+    </div>
+    <div class="sm-list" id="categories-list">
+      <!-- render โดย renderCategoriesList() -->
+    </div>
+    <button class="sm-fab" onclick="openCreateCategoryModal()">+</button>
   </div>
 
   <!-- ══════════════════════════════════════════════
@@ -1638,6 +1675,7 @@
       <div class="sp-detail">
         <button class="sp-detail-btn" onclick="goToMaterialsPage()">🧂 วัตถุดิบ</button>
         <button class="sp-detail-btn" onclick="goToOwnersPage()">🧑‍💼 เจ้าของ</button>
+   <button class="sp-detail-btn" onclick="goToCategoriesPage()">🏷️ หมวดหมู่สินค้า</button>
         <button class="sp-detail-btn" onclick="goToProductsPage()">🛍️ สินค้า</button>
         <button class="sp-detail-btn" onclick="showToast('กาชา — จะเปิดใช้งานในบล็อคถัดไป')">🎰 กาชา</button>
         <button class="sp-detail-btn" onclick="closeSettingsPanel(); openPromptPaySettings();">💳 ตั้งค่า PromptPay</button>
@@ -1740,60 +1778,71 @@
       <div class="modal-fullpage-title" id="product-modal-title">เพิ่มสินค้า</div>
     </div>
 
-    <div class="modal-fullpage-body">
-    <div class="form-group">
-      <label class="form-label">ชื่อสินค้า</label>
-      <input type="text" class="form-input" id="input-product-name" placeholder="เช่น แว่นกันแดดลาย A">
-    </div>
+<div class="modal-fullpage-body">
+    <div class="product-form-grid">
+      <div class="product-form-col">
+        <div class="form-group">
+          <label class="form-label">ชื่อสินค้า</label>
+          <input type="text" class="form-input" id="input-product-name" placeholder="เช่น แว่นกันแดดลาย A">
+        </div>
 
-<div class="form-group">
-      <label class="form-label">รูปสินค้า</label>
-      <div id="product-image-picker"></div>
-      <input type="file" accept="image/*" id="input-product-image-file"
-        style="display:none" onchange="handleProductImageFile(this)">
-    </div>
+        <div class="form-group">
+          <label class="form-label">รูปสินค้า</label>
+          <div id="product-image-picker"></div>
+          <input type="file" accept="image/*" id="input-product-image-file"
+            style="display:none" onchange="handleProductImageFile(this)">
+        </div>
 
-    <div class="form-group">
-      <label class="form-label">เจ้าของสินค้า</label>
-      <div class="chip-row" id="product-owner-chip-row"></div>
-    </div>
+        <div class="form-group">
+          <label class="form-label">หมวดหมู่สินค้า</label>
+          <div class="chip-row" id="product-category-chip-row"></div>
+        </div>
 
-    <div class="form-group">
-      <label class="form-label">รายการวัตถุดิบที่ใช้ (ไม่บังคับ — ถ้าไม่เพิ่ม จะกรอกต้นทุนเองด้านล่างแทน)</label>
-      <div class="recipe-section">
-        <div id="product-recipe-lines"></div>
-        <div class="recipe-actions">
-          <button type="button" class="recipe-action-btn" onclick="addRecipeLine()">+ เพิ่มรายการ</button>
-          <button type="button" class="recipe-action-btn" onclick="openMaterialModalFromProduct()">+ เพิ่มวัตถุดิบใหม่</button>
+        <div class="form-group">
+          <label class="form-label">เจ้าของสินค้า</label>
+          <div class="chip-row" id="product-owner-chip-row"></div>
         </div>
       </div>
-    </div>
 
-    <div class="form-group">
-      <label class="form-label">
-        ต้นทุนต่อชิ้น (บาท)
-        <span id="product-cost-mode-hint" style="color:var(--text-dim); font-weight:400;"></span>
-      </label>
-      <input type="number" inputmode="decimal" class="form-input" id="input-product-manual-cost"
-        placeholder="0" oninput="updateProductCostAndProfitPreview()">
-    </div>
+      <div class="product-form-col">
+        <div class="form-group">
+          <label class="form-label">รายการวัตถุดิบที่ใช้ (ไม่บังคับ — ถ้าไม่เพิ่ม จะกรอกต้นทุนเองด้านล่างแทน)</label>
+          <div class="recipe-section">
+            <div id="product-recipe-lines"></div>
+            <div class="recipe-actions">
+              <button type="button" class="recipe-action-btn" onclick="addRecipeLine()">+ เพิ่มรายการ</button>
+              <button type="button" class="recipe-action-btn" onclick="openMaterialModalFromProduct()">+ เพิ่มวัตถุดิบใหม่</button>
+            </div>
+          </div>
+        </div>
 
-    <div class="form-group">
-      <label class="form-label">ราคาขาย (บาท)</label>
-      <input type="number" inputmode="decimal" class="form-input" id="input-product-price"
-        placeholder="0" oninput="updateProductCostAndProfitPreview()">
-    </div>
+        <div class="form-group">
+          <label class="form-label">
+            ต้นทุนต่อชิ้น (บาท)
+            <span id="product-cost-mode-hint" style="color:var(--text-dim); font-weight:400;"></span>
+          </label>
+          <input type="number" inputmode="decimal" class="form-input" id="input-product-manual-cost"
+            placeholder="0" oninput="updateProductCostAndProfitPreview()">
+        </div>
 
-    <div class="profit-preview positive" id="product-profit-preview">กำไร: — บาท / ชิ้น</div>
+        <div class="form-group">
+          <label class="form-label">ราคาขาย (บาท)</label>
+          <input type="number" inputmode="decimal" class="form-input" id="input-product-price"
+            placeholder="0" oninput="updateProductCostAndProfitPreview()">
+        </div>
 
-    <div class="form-checkbox-row">
-      <input type="checkbox" id="input-product-stock-enabled" onchange="toggleProductStockQtyVisibility()">
-      <label for="input-product-stock-enabled">มีสต็อกสินค้า (นับจำนวนขายได้)</label>
-    </div>
+        <div class="profit-preview positive" id="product-profit-preview">กำไร: — บาท / ชิ้น</div>
 
-    <div class="form-group" id="product-stock-qty-group" style="display:none;">
-      <label class="form-label">จำนวนสต็อกเริ่มต้น</label>
-      <input type="number" inputmode="decimal" class="form-input" id="input-product-stock-qty" placeholder="0">
+        <div class="form-checkbox-row">
+          <input type="checkbox" id="input-product-stock-enabled" onchange="toggleProductStockQtyVisibility()">
+          <label for="input-product-stock-enabled">มีสต็อกสินค้า (นับจำนวนขายได้)</label>
+        </div>
+
+        <div class="form-group" id="product-stock-qty-group" style="display:none;">
+          <label class="form-label">จำนวนสต็อกเริ่มต้น</label>
+          <input type="number" inputmode="decimal" class="form-input" id="input-product-stock-qty" placeholder="0">
+        </div>
+      </div>
     </div>
 
 </div>
@@ -1878,6 +1927,30 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('modal-owner')">ยกเลิก</button>
       <button class="btn btn-primary" onclick="submitOwner()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: เพิ่ม/แก้ไข หมวดหมู่สินค้า
+     ══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-category">
+  <div class="modal-panel">
+    <div class="modal-title" id="category-modal-title">เพิ่มหมวดหมู่</div>
+
+    <div class="form-group">
+      <label class="form-label">ชื่อหมวดหมู่</label>
+      <input type="text" class="form-input" id="input-category-name" placeholder="เช่น เครื่องประดับ">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">เลือกไอคอน</label>
+      <div class="icon-row" id="category-icon-choice-row"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-category')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitCategory()">บันทึก</button>
     </div>
   </div>
 </div>
@@ -2057,7 +2130,7 @@ function setActiveRoomCode(roomCode) {
 
 const DB_VERSION = 1;
 // object store ทั้งหมดที่ทุกร้านต้องมี (schema เริ่มต้น — บล็อคถัดไปอาจเพิ่ม store ใหม่)
-const DB_STORES = ['materials', 'owners', 'products', 'gachaMachines', 'sales', 'settings'];
+const DB_STORES = ['materials', 'owners', 'products', 'categories', 'gachaMachines', 'sales', 'settings'];
 
 let _dbInstance = null;
 let _dbRoomCode = null;
@@ -3109,6 +3182,146 @@ async function deleteOwnerConfirm(id) {
 
 
 /* ══════════════════════════════════════════════════════════════
+   หมวดหมู่สินค้า (Categories)
+   ── โครงสร้าง: { id, name, icon, createdAt }
+   ══════════════════════════════════════════════════════════════ */
+
+let _pendingCategoryIcon = ICON_OPTIONS[0];
+let _editingCategoryId = null;
+let _editingCategoryData = null;
+
+function goToCategoriesPage() {
+  if (!getActiveRoomCode()) {
+    showToast('กรุณาเลือก/สร้างร้านก่อน');
+    return;
+  }
+  closeSettingsPanel();
+  openSubPage('page-categories');
+  renderCategoriesList();
+}
+
+async function renderCategoriesList() {
+  const container = document.getElementById('categories-list');
+  container.innerHTML = '<div class="sm-empty">กำลังโหลด...</div>';
+  try {
+    const list = await dbGetAll('categories');
+    if (list.length === 0) {
+      container.innerHTML = `<div class="sm-empty">ยังไม่มีหมวดหมู่<br>กดปุ่ม + ด้านล่างเพื่อเพิ่มหมวดหมู่แรก</div>`;
+      return;
+    }
+    list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    container.innerHTML = list.map(c => `
+      <div class="item-card">
+        <div class="item-icon" style="background:var(--surface2);">${c.icon}</div>
+        <div class="item-main" onclick="openEditCategoryModal('${c.id}')">
+          <div class="item-name">${escapeHtml(c.name)}</div>
+        </div>
+        <button class="item-delete" onclick="deleteCategoryConfirm('${c.id}')">🗑</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = '<div class="sm-empty">โหลดข้อมูลไม่สำเร็จ</div>';
+  }
+}
+
+function renderCategoryIconRow() {
+  const row = document.getElementById('category-icon-choice-row');
+  row.innerHTML = ICON_OPTIONS.map(icon => `
+    <button class="icon-choice ${icon === _pendingCategoryIcon ? 'selected' : ''}"
+      data-icon="${icon}" onclick="pickCategoryIcon('${icon}', this)">${icon}</button>
+  `).join('');
+}
+
+function pickCategoryIcon(icon, btnEl) {
+  _pendingCategoryIcon = icon;
+  document.querySelectorAll('#category-icon-choice-row .icon-choice').forEach(el => el.classList.remove('selected'));
+  btnEl.classList.add('selected');
+}
+
+function openCreateCategoryModal() {
+  _editingCategoryId = null;
+  _editingCategoryData = null;
+  _pendingCategoryIcon = ICON_OPTIONS[0];
+
+  document.getElementById('category-modal-title').textContent = 'เพิ่มหมวดหมู่';
+  document.getElementById('input-category-name').value = '';
+  renderCategoryIconRow();
+
+  openModal('modal-category');
+}
+
+async function openEditCategoryModal(id) {
+  const list = await dbGetAll('categories');
+  const c = list.find(x => x.id === id);
+  if (!c) return;
+
+  _editingCategoryId = id;
+  _editingCategoryData = c;
+  _pendingCategoryIcon = c.icon;
+
+  document.getElementById('category-modal-title').textContent = 'แก้ไขหมวดหมู่';
+  document.getElementById('input-category-name').value = c.name;
+  renderCategoryIconRow();
+
+  openModal('modal-category');
+}
+
+async function submitCategory() {
+  const nameInput = document.getElementById('input-category-name');
+  const name = nameInput.value.trim();
+
+  if (!name) {
+    showToast('กรุณากรอกชื่อหมวดหมู่');
+    nameInput.focus();
+    return;
+  }
+
+  const record = {
+    id: _editingCategoryId || uid(),
+    name,
+    icon: _pendingCategoryIcon,
+    createdAt: _editingCategoryData ? _editingCategoryData.createdAt : Date.now()
+  };
+
+  try {
+    await dbPut('categories', record);
+    closeModal('modal-category');
+    renderCategoriesList();
+    showToast(_editingCategoryId ? 'แก้ไขหมวดหมู่แล้ว' : 'เพิ่มหมวดหมู่แล้ว');
+
+    if (_productCategoryModalReturnFlag) {
+      _productCategoryModalReturnFlag = false;
+      _productModalCategories = await dbGetAll('categories');
+      _pendingProductCategoryId = record.id;
+      renderProductCategoryChips();
+    }
+  } catch (e) {
+    console.error(e);
+    showToast('บันทึกไม่สำเร็จ');
+  }
+}
+
+async function deleteCategoryConfirm(id) {
+  const list = await dbGetAll('categories');
+  const c = list.find(x => x.id === id);
+  if (!c) return;
+
+  const ok = confirm(`ลบหมวดหมู่ "${c.name}" ? (สินค้าที่เคยอยู่หมวดนี้จะกลายเป็น "ไม่ระบุหมวดหมู่")`);
+  if (!ok) return;
+
+  try {
+    await dbDelete('categories', id);
+    renderCategoriesList();
+    showToast('ลบหมวดหมู่แล้ว');
+  } catch (e) {
+    console.error(e);
+    showToast('ลบไม่สำเร็จ');
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
    สินค้า (Products)
    ── ต้นทุนคำนวณได้ 2 ทาง: จากสูตรวัตถุดิบ (ถ้ามีรายการ) หรือกรอกเอง
       (ถ้ามีรายการสูตร ต้นทุนจะคำนวณจากสูตรเสมอ ไม่ใช่บวกกับที่กรอกเอง)
@@ -3126,11 +3339,14 @@ let _pendingProductOwnerId = null;
 let _productRecipeLines = [];     // [{ _lineUid, materialId, qty }]
 let _productModalMaterials = [];  // cache วัตถุดิบทั้งหมด ตอนเปิดฟอร์มสินค้า
 let _productModalOwners = [];     // cache เจ้าของทั้งหมด ตอนเปิดฟอร์มสินค้า
+let _productModalCategories = []; // cache หมวดหมู่ทั้งหมด ตอนเปิดฟอร์มสินค้า
+let _pendingProductCategoryId = null;
 
-// flag ไว้บอกว่า modal-material / modal-owner ถูกเปิดมาจากฟอร์มสินค้า
+// flag ไว้บอกว่า modal-material / modal-owner / modal-category ถูกเปิดมาจากฟอร์มสินค้า
 // (เพื่อรีเฟรช cache + auto-select กลับเข้าฟอร์มสินค้าหลังบันทึก)
 let _productMaterialModalReturnFlag = false;
 let _productOwnerModalReturnFlag = false;
+let _productCategoryModalReturnFlag = false;
 
 function goToProductsPage() {
   if (!getActiveRoomCode()) {
@@ -3146,7 +3362,7 @@ async function renderProductsList() {
   const container = document.getElementById('products-list');
   container.innerHTML = '<div class="sm-empty">กำลังโหลด...</div>';
   try {
-    const [products, owners] = await Promise.all([dbGetAll('products'), dbGetAll('owners')]);
+const [products, owners, categories] = await Promise.all([dbGetAll('products'), dbGetAll('owners'), dbGetAll('categories')]);
     if (products.length === 0) {
       container.innerHTML = `<div class="sm-empty">ยังไม่มีสินค้า<br>กดปุ่ม + ด้านล่างเพื่อเพิ่มสินค้าแรก</div>`;
       return;
@@ -3154,6 +3370,7 @@ async function renderProductsList() {
     products.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     container.innerHTML = products.map(p => {
       const owner = owners.find(o => o.id === p.ownerId);
+      const category = categories.find(c => c.id === p.categoryId);
       const profitClass = p.profit >= 0 ? 'positive' : 'negative';
       const stockText = p.stockEnabled ? `คงเหลือ ${fmt(p.stock)}` : 'ไม่จำกัดสต็อก';
 return `
@@ -3161,6 +3378,7 @@ return `
           <div class="item-icon">${productThumbHtml(p)}</div>
           <div class="item-main" onclick="openEditProductModal('${p.id}')">
             <div class="item-name">${escapeHtml(p.name)}</div>
+            ${category ? `<div class="item-category-tag">${category.icon} ${escapeHtml(category.name)}</div>` : ''}
             ${owner ? `<div class="item-owner-tag">${owner.icon} ${escapeHtml(owner.name)}</div>` : ''}
             <div class="item-price-row">
               <span class="price">ขาย ${fmt(p.price)} บ.</span>
@@ -3181,13 +3399,15 @@ return `
 async function loadProductModalRefData() {
   _productModalMaterials = await dbGetAll('materials');
   _productModalOwners = await dbGetAll('owners');
+  _productModalCategories = await dbGetAll('categories');
 }
 
 async function openCreateProductModal() {
-  _editingProductId = null;
+_editingProductId = null;
   _editingProductData = null;
   _pendingProductImage = null;
   _pendingProductOwnerId = null;
+  _pendingProductCategoryId = null;
   _productRecipeLines = [];
 
   document.getElementById('product-modal-title').textContent = 'เพิ่มสินค้า';
@@ -3198,8 +3418,9 @@ async function openCreateProductModal() {
   document.getElementById('input-product-stock-qty').value = '';
   toggleProductStockQtyVisibility();
 
-  await loadProductModalRefData();
+await loadProductModalRefData();
   renderProductImagePicker();
+  renderProductCategoryChips();
   renderProductOwnerChips();
   renderProductRecipeLines();
 
@@ -3211,10 +3432,11 @@ async function openEditProductModal(id) {
   const p = list.find(x => x.id === id);
   if (!p) return;
 
-  _editingProductId = id;
+_editingProductId = id;
   _editingProductData = p;
   _pendingProductImage = p.image || null;
   _pendingProductOwnerId = p.ownerId;
+  _pendingProductCategoryId = p.categoryId || null;
   _productRecipeLines = (p.recipeLines || []).map(l => ({
     _lineUid: uid(), materialId: l.materialId, qty: l.qty
   }));
@@ -3227,8 +3449,9 @@ async function openEditProductModal(id) {
   document.getElementById('input-product-stock-qty').value = p.stockEnabled ? p.stock : '';
   toggleProductStockQtyVisibility();
 
-  await loadProductModalRefData();
+await loadProductModalRefData();
   renderProductImagePicker();
+  renderProductCategoryChips();
   renderProductOwnerChips();
   renderProductRecipeLines();
 
@@ -3305,6 +3528,25 @@ function pickProductOwner(ownerId) {
 function openOwnerModalFromProduct() {
   _productOwnerModalReturnFlag = true;
   openCreateOwnerModal();
+}
+
+/* ── หมวดหมู่สินค้า (chip, เลือกได้ไม่บังคับ, มีปุ่มเพิ่มหมวดหมู่เสมอ) ── */
+function renderProductCategoryChips() {
+  const row = document.getElementById('product-category-chip-row');
+  if (!row) return;
+  const chips = _productModalCategories.map(c => `
+    <button type="button" class="chip ${c.id === _pendingProductCategoryId ? 'selected' : ''}"
+      onclick="pickProductCategory('${c.id}')">${c.icon} ${escapeHtml(c.name)}</button>
+  `).join('');
+  row.innerHTML = chips + `<button type="button" class="chip add" onclick="openCategoryModalFromProduct()">+ เพิ่มหมวดหมู่</button>`;
+}
+function pickProductCategory(categoryId) {
+  _pendingProductCategoryId = (_pendingProductCategoryId === categoryId) ? null : categoryId;
+  renderProductCategoryChips();
+}
+function openCategoryModalFromProduct() {
+  _productCategoryModalReturnFlag = true;
+  openCreateCategoryModal();
 }
 
 /* ── วัตถุดิบเพิ่มใหม่จากฟอร์มสินค้า ── */
@@ -3445,6 +3687,7 @@ const record = {
     name,
     image: _pendingProductImage,
     ownerId: _pendingProductOwnerId,
+    categoryId: _pendingProductCategoryId,
     recipeLines,
     manualCost: recipeLines.length > 0 ? null : cost,
     cost,
